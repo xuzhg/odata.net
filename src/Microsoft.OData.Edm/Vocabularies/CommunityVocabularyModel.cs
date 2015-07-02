@@ -4,7 +4,6 @@
 // </copyright>
 //---------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -14,7 +13,7 @@ using System.Xml;
 using Microsoft.OData.Edm.Csdl;
 using Microsoft.OData.Edm.Validation;
 
-namespace Microsoft.OData.Edm.Vocabularies.Community.V1
+namespace Microsoft.OData.Edm.Vocabularies.V1
 {
     /// <summary>
     /// Representing Community Vocabulary Model.

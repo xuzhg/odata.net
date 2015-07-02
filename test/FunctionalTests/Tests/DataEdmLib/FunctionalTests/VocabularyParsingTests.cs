@@ -22,7 +22,6 @@ namespace EdmLibTests.FunctionalTests
     using Microsoft.OData.Edm.Library.Expressions;
     using Microsoft.OData.Edm.Library.Values;
     using Microsoft.OData.Edm.Validation;
-    using Microsoft.OData.Edm.Vocabularies.Community.V1;
     using Microsoft.OData.Edm.Vocabularies.V1;
     using Microsoft.Test.OData.Utils.Metadata;
 #if SILVERLIGHT
@@ -1618,8 +1617,8 @@ namespace EdmLibTests.FunctionalTests
             var prop3 = book.AddStructuralProperty("prop3", EdmPrimitiveTypeKind.Int32, false);
             var prop4 = book.AddStructuralProperty("prop4", EdmPrimitiveTypeKind.Int32, false);
             book.AddKeys(prop1);
-            book.AddAlternateKey(model, new Dictionary<string, IEdmProperty> { { "s2", prop2 } });
-            book.AddAlternateKey(model, new Dictionary<string, IEdmProperty> { { "s3", prop3 }, { "s4", prop4 } });
+            model.AddAlternateKeyAnnotation(book, new Dictionary<string, IEdmProperty> { { "s2", prop2 } });
+            model.AddAlternateKeyAnnotation(book, new Dictionary<string, IEdmProperty> { { "s3", prop3 }, { "s4", prop4 } });
 
             IEnumerable<EdmError> errors;
             StringWriter sw = new StringWriter();
@@ -1642,26 +1641,26 @@ namespace EdmLibTests.FunctionalTests
     <Property Name=""prop2"" Type=""Edm.Int32"" Nullable=""false"" />
     <Property Name=""prop3"" Type=""Edm.Int32"" Nullable=""false"" />
     <Property Name=""prop4"" Type=""Edm.Int32"" Nullable=""false"" />
-    <Annotation Term=""OData.Community.AlternateKeys.V1.AlternateKeys"">
+    <Annotation Term=""Org.OData.Community.V1.AlternateKeys"">
       <Collection>
-        <Record Type=""OData.Community.AlternateKeys.V1.AlternateKey"">
+        <Record Type=""Org.OData.Community.V1.AlternateKey"">
           <PropertyValue Property=""Key"">
             <Collection>
-              <Record Type=""OData.Community.AlternateKeys.V1.PropertyRef"">
+              <Record Type=""Org.OData.Community.V1.PropertyRef"">
                 <PropertyValue Property=""Alias"" String=""s2"" />
                 <PropertyValue Property=""Name"" PropertyPath=""prop2"" />
               </Record>
             </Collection>
           </PropertyValue>
         </Record>
-        <Record Type=""OData.Community.AlternateKeys.V1.AlternateKey"">
+        <Record Type=""Org.OData.Community.V1.AlternateKey"">
           <PropertyValue Property=""Key"">
             <Collection>
-              <Record Type=""OData.Community.AlternateKeys.V1.PropertyRef"">
+              <Record Type=""Org.OData.Community.V1.PropertyRef"">
                 <PropertyValue Property=""Alias"" String=""s3"" />
                 <PropertyValue Property=""Name"" PropertyPath=""prop3"" />
               </Record>
-              <Record Type=""OData.Community.AlternateKeys.V1.PropertyRef"">
+              <Record Type=""Org.OData.Community.V1.PropertyRef"">
                 <PropertyValue Property=""Alias"" String=""s4"" />
                 <PropertyValue Property=""Name"" PropertyPath=""prop4"" />
               </Record>
@@ -1689,26 +1688,26 @@ namespace EdmLibTests.FunctionalTests
     <Property Name=""prop2"" Type=""Edm.Int32"" Nullable=""false"" />
     <Property Name=""prop3"" Type=""Edm.Int32"" Nullable=""false"" />
     <Property Name=""prop4"" Type=""Edm.Int32"" Nullable=""false"" />
-    <Annotation Term=""OData.Community.AlternateKeys.V1.AlternateKeys"">
+    <Annotation Term=""Org.OData.Community.V1.AlternateKeys"">
       <Collection>
-        <Record Type=""OData.Community.AlternateKeys.V1.AlternateKey"">
+        <Record Type=""Org.OData.Community.V1.AlternateKey"">
           <PropertyValue Property=""Key"">
             <Collection>
-              <Record Type=""OData.Community.AlternateKeys.V1.PropertyRef"">
+              <Record Type=""Org.OData.Community.V1.PropertyRef"">
                 <PropertyValue Property=""Alias"" String=""s2"" />
                 <PropertyValue Property=""Name"" PropertyPath=""prop2"" />
               </Record>
             </Collection>
           </PropertyValue>
         </Record>
-        <Record Type=""OData.Community.AlternateKeys.V1.AlternateKey"">
+        <Record Type=""Org.OData.Community.V1.AlternateKey"">
           <PropertyValue Property=""Key"">
             <Collection>
-              <Record Type=""OData.Community.AlternateKeys.V1.PropertyRef"">
+              <Record Type=""Org.OData.Community.V1.PropertyRef"">
                 <PropertyValue Property=""Alias"" String=""s3"" />
                 <PropertyValue Property=""Name"" PropertyPath=""prop3"" />
               </Record>
-              <Record Type=""OData.Community.AlternateKeys.V1.PropertyRef"">
+              <Record Type=""Org.OData.Community.V1.PropertyRef"">
                 <PropertyValue Property=""Alias"" String=""s4"" />
                 <PropertyValue Property=""Name"" PropertyPath=""prop4"" />
               </Record>

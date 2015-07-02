@@ -22,7 +22,6 @@ using Microsoft.OData.Edm.Library.Values;
 using Microsoft.OData.Edm.PrimitiveValueConverters;
 using Microsoft.OData.Edm.Validation;
 using Microsoft.OData.Edm.Values;
-using Microsoft.OData.Edm.Vocabularies.Community.V1;
 using Microsoft.OData.Edm.Vocabularies.V1;
 using ErrorStrings = Microsoft.OData.Edm.Strings;
 
@@ -1598,20 +1597,20 @@ namespace Microsoft.OData.Edm
         }
 
         /// <summary>
-        /// Gets the declared alternate keys of the most defined entity with a declared key present.
+        /// Gets the declared alternate keys annotation of the defined entity type.
         /// </summary>
-        /// <param name="type">Reference to the calling object.</param>
         /// <param name="model">The model to be used.</param>
+        /// <param name="type">Reference to the calling object.</param>
         /// <returns>Alternate Keys of this type.</returns>
-        public static IEnumerable<IDictionary<string, IEdmProperty>> DeclaredAlternateKeys(this IEdmEntityType type, IEdmModel model)
+        public static IEnumerable<IDictionary<string, IEdmProperty>> AlternateKeysAnnotation(this IEdmModel model, IEdmEntityType type)
         {
-            EdmUtil.CheckArgumentNull(type, "type");
             EdmUtil.CheckArgumentNull(model, "model");
+            EdmUtil.CheckArgumentNull(type, "type");
 
             IEdmEntityType checkingType = type;
             while (checkingType != null)
             {
-                IEnumerable<IDictionary<string, IEdmProperty>> declaredAlternateKeys = GetDeclaredAlternateKeysForType(checkingType, model);
+                IEnumerable<IDictionary<string, IEdmProperty>> declaredAlternateKeys = GetDeclaredAlternateKeysForType(model, checkingType);
                 if (declaredAlternateKeys != null)
                 {
                     return declaredAlternateKeys;
@@ -1624,15 +1623,15 @@ namespace Microsoft.OData.Edm
         }
 
         /// <summary>
-        /// Adds the alternate keys to this entity type.
+        /// Adds the alternate keys annotation to this entity type.
         /// </summary>
-        /// <param name="type">Reference to the calling object.</param>
         /// <param name="model">The model to be used.</param>
+        /// <param name="type">Reference to the calling object.</param>
         /// <param name="alternateKey">Dictionary of alias and structural properties for the alternate key.</param>
-        public static void AddAlternateKey(this IEdmEntityType type, EdmModel model, IDictionary<string, IEdmProperty> alternateKey)
+        public static void AddAlternateKeyAnnotation(this EdmModel model, IEdmEntityType type, IDictionary<string, IEdmProperty> alternateKey)
         {
-            EdmUtil.CheckArgumentNull(type, "type");
             EdmUtil.CheckArgumentNull(model, "model");
+            EdmUtil.CheckArgumentNull(type, "type");
             EdmUtil.CheckArgumentNull(alternateKey, "alternateKey");
 
             EdmCollectionExpression annotationValue = null;
@@ -2643,10 +2642,10 @@ namespace Microsoft.OData.Edm
         /// <summary>
         /// Gets the declared alternate keys of the most defined entity with a declared key present.
         /// </summary>
-        /// <param name="type">Reference to the calling object.</param>
         /// <param name="model">The model to be used.</param>
+        /// <param name="type">Reference to the calling object.</param>
         /// <returns>Alternate Keys of this type.</returns>
-        private static IEnumerable<IDictionary<string, IEdmProperty>> GetDeclaredAlternateKeysForType(IEdmEntityType type, IEdmModel model)
+        private static IEnumerable<IDictionary<string, IEdmProperty>> GetDeclaredAlternateKeysForType(IEdmModel model, IEdmEntityType type)
         {
             IEdmValueAnnotation annotationValue = model.FindVocabularyAnnotations<IEdmValueAnnotation>(type, CommunityVocabularyModel.AlternateKeysTerm).FirstOrDefault();
 

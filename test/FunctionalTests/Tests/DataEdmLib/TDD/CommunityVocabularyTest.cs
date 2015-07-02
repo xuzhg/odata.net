@@ -14,7 +14,7 @@ namespace Microsoft.Test.Edm.TDD.Tests
     using Microsoft.OData.Edm;
     using Microsoft.OData.Edm.Csdl;
     using Microsoft.OData.Edm.Validation;
-    using Microsoft.OData.Edm.Vocabularies.Community.V1;
+    using Microsoft.OData.Edm.Vocabularies.V1;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -26,9 +26,9 @@ namespace Microsoft.Test.Edm.TDD.Tests
         public void TestAlternateKeysVocabularyModel()
         {
             const string expectedText = @"<?xml version=""1.0"" encoding=""utf-16""?>
-<Schema Namespace=""OData.Community.AlternateKeys.V1"" Alias=""Keys"" xmlns=""http://docs.oasis-open.org/odata/ns/edm"">
+<Schema Namespace=""Org.OData.Community.V1"" Alias=""Community"" xmlns=""http://docs.oasis-open.org/odata/ns/edm"">
   <ComplexType Name=""AlternateKey"">
-    <Property Name=""Key"" Type=""Collection(Keys.PropertyRef)"">
+    <Property Name=""Key"" Type=""Collection(Community.PropertyRef)"">
       <Annotation Term=""Core.Description"" String=""The set of properties that make up this key"" />
     </Property>
   </ComplexType>
@@ -40,15 +40,15 @@ namespace Microsoft.Test.Edm.TDD.Tests
       <Annotation Term=""Core.Description"" String=""A SimpleIdentifier that MUST be unique within the set of aliases, structural and navigation properties of the containing entity type that MUST be used in the key predicate of URLs"" />
     </Property>
   </ComplexType>
-  <Term Name=""AlternateKeys"" Type=""Collection(Keys.AlternateKey)"" AppliesTo=""EntityType"">
+  <Term Name=""AlternateKeys"" Type=""Collection(Community.AlternateKey)"" AppliesTo=""EntityType"">
     <Annotation Term=""Core.Description"" String=""Communicates available alternate keys"" />
   </Term>
 </Schema>";
 
-            var alternateKeysTerm = model.FindDeclaredValueTerm("OData.Community.AlternateKeys.V1.AlternateKeys");
+            var alternateKeysTerm = model.FindDeclaredValueTerm("Org.OData.Community.V1.AlternateKeys");
             Assert.IsNotNull(alternateKeysTerm);
             Assert.AreEqual(CommunityVocabularyModel.AlternateKeysTerm, alternateKeysTerm);
-            Assert.AreEqual("OData.Community.AlternateKeys.V1", alternateKeysTerm.Namespace);
+            Assert.AreEqual("Org.OData.Community.V1", alternateKeysTerm.Namespace);
             Assert.AreEqual("AlternateKeys", alternateKeysTerm.Name);
             Assert.AreEqual(EdmTermKind.Value, alternateKeysTerm.TermKind);
 

@@ -198,12 +198,12 @@ namespace Microsoft.Test.OData.Query.TDD.Tests
 
             var FullyQualifiedNamespacePerson_MyPet2Set = FullyQualifiedNamespacePerson.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo { Name = "MyPet2Set", TargetMultiplicity = EdmMultiplicity.Many, Target = FullyQualifiedNamespacePet2, });
 
-            FullyQualifiedNamespacePerson.AddAlternateKey(model, new Dictionary<string, IEdmProperty>()
+            model.AddAlternateKeyAnnotation(FullyQualifiedNamespacePerson, new Dictionary<string, IEdmProperty>()
             {
                 {"SocialSN", FullyQualifiedNamespacePerson_SSN}
             });
 
-            FullyQualifiedNamespacePerson.AddAlternateKey(model, new Dictionary<string, IEdmProperty>()
+            model.AddAlternateKeyAnnotation(FullyQualifiedNamespacePerson, new Dictionary<string, IEdmProperty>()
             {
                 {"NameAlias", FullyQualifiedNamespacePerson_Name},
                 {"FirstNameAlias", FullyQualifiedNamespacePerson_FirstName}
@@ -945,26 +945,26 @@ namespace Microsoft.Test.OData.Query.TDD.Tests
         <NavigationProperty Name=""MyContainedDog"" Type=""Fully.Qualified.Namespace.Dog"" ContainsTarget=""true"" />
         <NavigationProperty Name=""MyContainedChimeras"" Type=""Collection(Fully.Qualified.Namespace.Chimera)"" ContainsTarget=""true"" />
         <NavigationProperty Name=""MyPet2Set"" Type=""Collection(Fully.Qualified.Namespace.Pet2)"" />
-        <Annotation Term=""OData.Community.AlternateKeys.V1.AlternateKeys"">
+        <Annotation Term=""Org.OData.Community.V1.AlternateKeys"">
           <Collection>
-            <Record Type=""OData.Community.AlternateKeys.V1.AlternateKey"">
+            <Record Type=""Org.OData.Community.V1.AlternateKey"">
               <PropertyValue Property=""Key"">
                 <Collection>
-                  <Record Type=""OData.Community.AlternateKeys.V1.PropertyRef"">
+                  <Record Type=""Org.OData.Community.V1.PropertyRef"">
                     <PropertyValue Property=""Alias"" String=""SocialSN"" />
                     <PropertyValue Property=""Name"" PropertyPath=""SSN"" />
                   </Record>
                 </Collection>
               </PropertyValue>
             </Record>
-            <Record Type=""OData.Community.AlternateKeys.V1.AlternateKey"">
+            <Record Type=""Org.OData.Community.V1.AlternateKey"">
               <PropertyValue Property=""Key"">
                 <Collection>
-                  <Record Type=""OData.Community.AlternateKeys.V1.PropertyRef"">
+                  <Record Type=""Org.OData.Community.V1.PropertyRef"">
                     <PropertyValue Property=""Alias"" String=""NameAlias"" />
                     <PropertyValue Property=""Name"" PropertyPath=""Name"" />
                   </Record>
-                  <Record Type=""OData.Community.AlternateKeys.V1.PropertyRef"">
+                  <Record Type=""Org.OData.Community.V1.PropertyRef"">
                     <PropertyValue Property=""Alias"" String=""FirstNameAlias"" />
                     <PropertyValue Property=""Name"" PropertyPath=""FirstName"" />
                   </Record>

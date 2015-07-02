@@ -1,9 +1,9 @@
-﻿<Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="OData.Community.AlternateKeys.V1" Alias="Keys">
-  <Term AppliesTo="EntityType" Type="Collection(Keys.AlternateKey)" Name="AlternateKeys">
+﻿<Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="Org.OData.Community.V1" Alias="Community">
+  <Term AppliesTo="EntityType" Type="Collection(Community.AlternateKey)" Name="AlternateKeys">
     <Annotation Term="Core.Description" String="Communicates available alternate keys"/>
   </Term>
   <ComplexType Name="AlternateKey">
-    <Property Type="Collection(Keys.PropertyRef)" Name="Key">
+    <Property Type="Collection(Community.PropertyRef)" Name="Key">
       <Annotation Term="Core.Description" String="The set of properties that make up this key"/>
     </Property>
   </ComplexType>
