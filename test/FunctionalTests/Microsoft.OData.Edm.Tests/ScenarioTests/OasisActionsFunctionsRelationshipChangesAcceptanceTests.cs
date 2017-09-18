@@ -6,7 +6,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -15,6 +17,8 @@ using Microsoft.OData.Edm.Csdl;
 using Microsoft.OData.Edm.Validation;
 using Xunit;
 using ErrorStrings = Microsoft.OData.Edm.Strings;
+using Newtonsoft.Json;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace Microsoft.OData.Edm.Tests.ScenarioTests
 {
@@ -417,6 +421,30 @@ namespace Microsoft.OData.Edm.Tests.ScenarioTests
             var actualNormalized = actualXml.ToString();
 
             actualNormalized.Should().Be(DefaultTestModel.RepresentativeEdmxDocument);
+        }
+
+        [Fact]
+        public void VerifyRepresentaJsony()
+        {
+            var builder = new StringBuilder();
+            StringWriter sw = new StringWriter(builder);
+            using (var writer = new JsonTextWriter(sw))
+            {
+                writer.Formatting = Formatting.Indented;
+
+                IEnumerable<EdmError> errors;
+                //JsonMetadataWriter.TryWriteJson(this.TestModel.RepresentativeModel, writer, CsdlTarget.OData, out errors).Should().BeTrue();
+                CsdlWriter.TryWriteCsdl(this.TestModel.RepresentativeModel, writer, out errors).Should().BeTrue();
+                errors.Should().BeEmpty();
+                writer.Flush();
+            }
+
+            string actual = builder.ToString();
+            
+            Console.WriteLine(actual);
+
+            Assert.Equal(actual, "{}");
+
         }
     }
 }

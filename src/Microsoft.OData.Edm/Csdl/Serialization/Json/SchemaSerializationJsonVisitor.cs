@@ -1,5 +1,5 @@
 ﻿//---------------------------------------------------------------------
-// <copyright file="EdmModelCsdlSerializationVisitor.cs" company="Microsoft">
+// <copyright file="SchemaSerializationJsonVisitor.cs" company="Microsoft">
 //      Copyright (C) Microsoft Corporation. All rights reserved. See License.txt in the project root for license information.
 // </copyright>
 //---------------------------------------------------------------------
@@ -7,36 +7,24 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml;
 using Microsoft.OData.Edm.Vocabularies;
 using Newtonsoft.Json;
 
 namespace Microsoft.OData.Edm.Csdl.Serialization
 {
-    internal sealed class EdmModelCsdlSerializationVisitor : EdmModelVisitor
+    internal sealed class SchemaSerializationJsonVisitor : EdmModelVisitor
     {
-        private readonly EdmModelCsdlSchemaWriter schemaWriter;
+        private readonly Version edmVersion;
+        private readonly SchemaJsonWriter schemaWriter;
         private readonly List<IEdmNavigationProperty> navigationProperties = new List<IEdmNavigationProperty>();
         private readonly VersioningDictionary<string, string> namespaceAliasMappings;
 
-        internal Version EdmVersion => schemaWriter.Version;
-
-
-        internal EdmModelCsdlSerializationVisitor(IEdmModel model, XmlWriter xmlWriter, Version edmVersion)
-            : this(model, new EdmModelCsdlSchemaXmlWriter(model, xmlWriter, edmVersion))
-        {
-        }
-
-        internal EdmModelCsdlSerializationVisitor(IEdmModel model, JsonWriter jsonWriter, Version edmVersion)
-            : this(model, new EdmModelCsdlSchemaJsonWriter(model, jsonWriter, edmVersion))
-        {
-        }
-
-        internal EdmModelCsdlSerializationVisitor(IEdmModel model, EdmModelCsdlSchemaWriter csdlSchemaWriter)
+        internal SchemaSerializationJsonVisitor(IEdmModel model, JsonWriter jsonWriter, Version edmVersion)
             : base(model)
         {
+            this.edmVersion = edmVersion;
             this.namespaceAliasMappings = model.GetNamespaceAliases();
-            this.schemaWriter = csdlSchemaWriter;
+            this.schemaWriter = new SchemaJsonWriter(model, this.namespaceAliasMappings, jsonWriter, this.edmVersion);
         }
 
         public override void VisitEntityContainerElements(IEnumerable<IEdmEntityContainerElement> elements)
@@ -49,16 +37,15 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
                 switch (element.ContainerElementKind)
                 {
                     case EdmContainerElementKind.EntitySet:
-                        this.ProcessEntitySet((IEdmEntitySet) element);
+                        this.ProcessEntitySet((IEdmEntitySet)element);
                         break;
                     case EdmContainerElementKind.Singleton:
-                        this.ProcessSingleton((IEdmSingleton) element);
+                        this.ProcessSingleton((IEdmSingleton)element);
                         break;
                     case EdmContainerElementKind.ActionImport:
                         // Skip actionImports that have the same name for same overloads of a function.
-                        IEdmActionImport actionImport = (IEdmActionImport) element;
-                        string uniqueActionName = actionImport.Name + "_" + actionImport.Action.FullName() +
-                                                  GetEntitySetString(actionImport);
+                        IEdmActionImport actionImport = (IEdmActionImport)element;
+                        string uniqueActionName = actionImport.Name + "_" + actionImport.Action.FullName() + GetEntitySetString(actionImport);
                         if (!actionImportsWritten.Contains(uniqueActionName))
                         {
                             actionImportsWritten.Add(uniqueActionName);
@@ -68,9 +55,8 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
                         break;
                     case EdmContainerElementKind.FunctionImport:
                         // Skip functionImports that have the same name for same overloads of a function.
-                        IEdmFunctionImport functionImport = (IEdmFunctionImport) element;
-                        string uniqueFunctionName = functionImport.Name + "_" + functionImport.Function.FullName() +
-                                                    GetEntitySetString(functionImport);
+                        IEdmFunctionImport functionImport = (IEdmFunctionImport)element;
+                        string uniqueFunctionName = functionImport.Name + "_" + functionImport.Function.FullName() + GetEntitySetString(functionImport);
                         if (!functionImportsWritten.Contains(uniqueFunctionName))
                         {
                             functionImportsWritten.Add(uniqueFunctionName);
@@ -82,8 +68,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
                         this.ProcessEntityContainerElement(element);
                         break;
                     default:
-                        throw new InvalidOperationException(
-                            Edm.Strings.UnknownEnumVal_ContainerElementKind(element.ContainerElementKind.ToString()));
+                        throw new InvalidOperationException(Edm.Strings.UnknownEnumVal_ContainerElementKind(element.ContainerElementKind.ToString()));
                 }
             }
         }
@@ -96,70 +81,55 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
                 this.namespaceAliasMappings.TryGetValue(element.Namespace, out alias);
             }
 
-            this.schemaWriter.WriteSchemaElementStart(element, alias, mappings);
+            this.schemaWriter.WriteSchemaStart(element, alias, mappings);
 
-            VisitSchemaElements(element.SchemaElements);
+           VisitSchemaElements(element.SchemaElements);
 
             // EntityContainers are excluded from the EdmSchema.SchemaElements property so they can be forced to the end.
             VisitCollection(element.EntityContainers, this.ProcessEntityContainer);
-
-            /*
-            foreach (KeyValuePair<string, List<IEdmVocabularyAnnotation>> annotationsForTarget in element.OutOfLineAnnotations)
+/*            foreach (KeyValuePair<string, List<IEdmVocabularyAnnotation>> annotationsForTarget in element.OutOfLineAnnotations)
             {
                 this.schemaWriter.WriteAnnotationsElementHeader(annotationsForTarget.Key);
                 VisitVocabularyAnnotations(annotationsForTarget.Value);
                 this.schemaWriter.WriteEndElement();
-            }*/
-
-            this.schemaWriter.WriteSchemaElementEnd(element, alias);
+            }
+            */
+            this.schemaWriter.WriteEndElement();
         }
-
-        /*
-        private GetOperations(IList<IEdmSchemaElement> elements)
-        {
-            var allActions = elements.OfType<IEdmAction>().Select(e => e.IsBound);
-        }*/
 
         protected override void ProcessEntityContainer(IEdmEntityContainer element)
         {
-            this.BeginElement(element, this.schemaWriter.WriteEntityContainerElementStart);
-
+            this.BeginElement(element, this.schemaWriter.WriteEntityContainerStart);
             base.ProcessEntityContainer(element);
-
-            this.VisitElementAnnotations(element);
-
-            this.schemaWriter.WriteEntityContainerElementEnd(element);
+            this.EndElement(element);
         }
 
         protected override void ProcessEntitySet(IEdmEntitySet element)
         {
             this.BeginElement(element, this.schemaWriter.WriteEntitySetElementStart);
 
-            //  base.ProcessEntitySet(element);
+   //         base.ProcessEntitySet(element);
 
             foreach (IEdmNavigationPropertyBinding binding in element.NavigationPropertyBindings)
             {
                 this.schemaWriter.WriteNavigationPropertyBinding(element, binding);
             }
 
-            VisitElementAnnotations(element);
-            this.schemaWriter.WriteEntitySetElementEnd(element);
+            this.EndElement(element);
         }
 
         protected override void ProcessSingleton(IEdmSingleton element)
         {
-            this.BeginElement(element, this.schemaWriter.WriteSingletonElementStart);
+            this.BeginElement(element, this.schemaWriter.WriteSingletonElementHeader);
 
-            //   base.ProcessSingleton(element);
+            base.ProcessSingleton(element);
 
             foreach (IEdmNavigationPropertyBinding binding in element.NavigationPropertyBindings)
             {
                 this.schemaWriter.WriteNavigationPropertyBinding(element, binding);
             }
 
-            VisitElementAnnotations(element);
-            this.schemaWriter.WriteSingletonElementEnd(element);
-            //this.EndElement(element);
+            this.EndElement(element);
         }
 
         protected override void ProcessEntityType(IEdmEntityType element)
@@ -171,19 +141,15 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
             }
 
             this.VisitProperties(element.DeclaredStructuralProperties().Cast<IEdmProperty>());
-            this.VisitProperties(element.DeclaredNavigationProperties().Cast<IEdmProperty>());
+        //    this.VisitProperties(element.DeclaredNavigationProperties().Cast<IEdmProperty>());
 
-            // this.EndElement(element);
-            VisitElementAnnotations(element);
-            schemaWriter.WriteEntityTypeElementEnd(element);
+            this.schemaWriter.WriteEndElement();
         }
 
         protected override void ProcessStructuralProperty(IEdmStructuralProperty element)
         {
             bool inlineType = IsInlineType(element.Type);
-            this.BeginElement(element,
-                (IEdmStructuralProperty t) => { this.schemaWriter.WriteStructuralPropertyElementHeader(t, inlineType); },
-                e => { this.ProcessFacets(e.Type, inlineType); });
+            this.BeginElement(element, (IEdmStructuralProperty t) => { this.schemaWriter.WriteStructuralPropertyStart(t, inlineType); }, e => { this.ProcessFacets(e.Type, inlineType); });
             if (!inlineType)
             {
                 VisitTypeReference(element.Type);
@@ -233,10 +199,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
 
             this.ProcessReferentialConstraint(element.ReferentialConstraint);
 
-            // this.EndElement(element);
-            VisitElementAnnotations(element);
-            this.schemaWriter.WriteNavigationPropertyElementEnd(element);
-
+            this.EndElement(element);
             this.navigationProperties.Add(element);
         }
 
@@ -244,29 +207,20 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
         {
             this.BeginElement(element, this.schemaWriter.WriteComplexTypeElementHeader);
             base.ProcessComplexType(element);
-
-
-            //this.EndElement(element);
-            VisitElementAnnotations(element);
-            this.schemaWriter.WriteComplexTypeElementEnd(element);
+            this.EndElement(element);
         }
 
         protected override void ProcessEnumType(IEdmEnumType element)
         {
             this.BeginElement(element, this.schemaWriter.WriteEnumTypeElementHeader);
             base.ProcessEnumType(element);
-            //this.EndElement(element);
-            VisitElementAnnotations(element);
-            this.schemaWriter.WriteEnumTypeElementEnd(element);
+            this.EndElement(element);
         }
 
         protected override void ProcessEnumMember(IEdmEnumMember element)
         {
             this.BeginElement(element, this.schemaWriter.WriteEnumMemberElementHeader);
-
-            VisitElementAnnotations(element);
-
-            this.schemaWriter.WriteEnumMemberElementEnd(element);
+            this.EndElement(element);
         }
 
         protected override void ProcessTypeDefinition(IEdmTypeDefinition element)
@@ -279,8 +233,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
         protected override void ProcessTerm(IEdmTerm term)
         {
             bool inlineType = term.Type != null && IsInlineType(term.Type);
-            this.BeginElement(term, (IEdmTerm t) => { this.schemaWriter.WriteTermElementHeader(t, inlineType); },
-                e => { this.ProcessFacets(e.Type, inlineType); });
+            this.BeginElement(term, (IEdmTerm t) => { this.schemaWriter.WriteTermElementHeader(t, inlineType); }, e => { this.ProcessFacets(e.Type, inlineType); });
             if (!inlineType)
             {
                 if (term.Type != null)
@@ -318,9 +271,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
             IEdmVocabularyAnnotatable vocabularyAnnotatableElement = element as IEdmVocabularyAnnotatable;
             if (vocabularyAnnotatableElement != null)
             {
-                this.VisitElementVocabularyAnnotations(
-                    this.Model.FindDeclaredVocabularyAnnotations(vocabularyAnnotatableElement)
-                        .Where(a => a.IsInline(this.Model)));
+                this.VisitElementVocabularyAnnotations(this.Model.FindDeclaredVocabularyAnnotations(vocabularyAnnotatableElement).Where(a => a.IsInline(this.Model)));
             }
 
             this.schemaWriter.WriteOperationParameterEndElement(element);
@@ -343,21 +294,14 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
 
         protected override void ProcessActionImport(IEdmActionImport actionImport)
         {
-            this.BeginElement(actionImport, this.schemaWriter.WriteActionImportElementHeader);
-
-            VisitElementAnnotations(actionImport);
-            this.schemaWriter.WriteActionImportElementEnd(actionImport);
-
-            //this.EndElement(actionImport);
+            this.BeginElement(actionImport, this.schemaWriter.WriteActionImportElementStart);
+            this.EndElement(actionImport);
         }
 
         protected override void ProcessFunctionImport(IEdmFunctionImport functionImport)
         {
-            this.BeginElement(functionImport, this.schemaWriter.WriteFunctionImportElementHeader);
-
-            VisitElementAnnotations(functionImport);
-            this.schemaWriter.WriteFunctionImportElementEnd(functionImport);
-            //this.EndElement(functionImport);
+            this.BeginElement(functionImport, this.schemaWriter.WriteFunctionImportElementStart);
+            this.EndElement(functionImport);
         }
 
         #region Vocabulary Annotations
@@ -373,7 +317,6 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
 
             this.EndElement(annotation);
         }
-
         #endregion
 
         #region Expressions
@@ -446,9 +389,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
         protected override void ProcessIsTypeExpression(IEdmIsTypeExpression expression)
         {
             bool inlineType = IsInlineType(expression.Type);
-            this.BeginElement(expression,
-                (IEdmIsTypeExpression t) => { this.schemaWriter.WriteIsTypeExpressionElementHeader(t, inlineType); },
-                e => { this.ProcessFacets(e.Type, inlineType); });
+            this.BeginElement(expression, (IEdmIsTypeExpression t) => { this.schemaWriter.WriteIsTypeExpressionElementHeader(t, inlineType); }, e => { this.ProcessFacets(e.Type, inlineType); });
             if (!inlineType)
             {
                 VisitTypeReference(expression.Type);
@@ -530,9 +471,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
         protected override void ProcessCastExpression(IEdmCastExpression expression)
         {
             bool inlineType = IsInlineType(expression.Type);
-            this.BeginElement(expression,
-                (IEdmCastExpression t) => { this.schemaWriter.WriteCastExpressionElementHeader(t, inlineType); },
-                e => { this.ProcessFacets(e.Type, inlineType); });
+            this.BeginElement(expression, (IEdmCastExpression t) => { this.schemaWriter.WriteCastExpressionElementHeader(t, inlineType); }, e => { this.ProcessFacets(e.Type, inlineType); });
             if (!inlineType)
             {
                 VisitTypeReference(expression.Type);
@@ -542,7 +481,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
             this.EndElement(expression);
         }
 
-        #endregion
+#endregion
 
         private static bool IsInlineType(IEdmTypeReference reference)
         {
@@ -596,15 +535,19 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
             return null;
         }
 
-        private void ProcessOperation<TOperation>(TOperation operation, Action<TOperation> writeElementAction)
-            where TOperation : IEdmOperation
+        private void ProcessOperation<TOperation>(TOperation operation, Action<TOperation> writeElementAction) where TOperation : IEdmOperation
         {
-            this.BeginElement(operation, writeElementAction);
-            this.VisitOperationParameters(operation.Parameters);
-            this.ProcessOperationReturnType(operation.ReturnType);
-            this.EndElement(operation);
+            if (this.schemaWriter != null)
+            {
+                // remove
+            }
+    //        this.BeginElement(operation, writeElementAction);
+    //        this.VisitOperationParameters(operation.Parameters);
+    //        this.ProcessOperationReturnType(operation.ReturnType);
+     //       this.EndElement(operation);
         }
 
+#if false
         private void ProcessOperationReturnType(IEdmTypeReference operationReturnType)
         {
             if (operationReturnType == null)
@@ -630,7 +573,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
                 });
             this.EndElement(operationReturnType);
         }
-
+#endif
         private void ProcessReferentialConstraint(IEdmReferentialConstraint element)
         {
             if (element != null)
@@ -673,8 +616,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
         {
             this.schemaWriter.WriteDelaredKeyPropertiesElementHeader();
             this.VisitPropertyRefs(keyProperties);
-            //this.schemaWriter.WriteEndElement();
-            this.schemaWriter.WriteDelaredKeyPropertiesElementEnd();
+            this.schemaWriter.WriteEndArrayElement();
         }
 
         private void VisitPropertyRefs(IEnumerable<IEdmStructuralProperty> properties)
@@ -745,8 +687,7 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
             }
         }
 
-        private void BeginElement<TElement>(TElement element, Action<TElement> elementHeaderWriter,
-            params Action<TElement>[] additionalAttributeWriters)
+        private void BeginElement<TElement>(TElement element, Action<TElement> elementHeaderWriter, params Action<TElement>[] additionalAttributeWriters)
             where TElement : IEdmElement
         {
             elementHeaderWriter(element);
@@ -761,36 +702,16 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
             this.VisitAttributeAnnotations(this.Model.DirectValueAnnotations(element));
         }
 
-        private void VisitElementAnnotations(IEdmElement element)
-        {
-            this.VisitPrimitiveElementAnnotations(this.Model.DirectValueAnnotations(element));
-            IEdmVocabularyAnnotatable vocabularyAnnotatableElement = element as IEdmVocabularyAnnotatable;
-            if (vocabularyAnnotatableElement != null)
-            {
-                this.VisitElementVocabularyAnnotations(
-                    this.Model.FindDeclaredVocabularyAnnotations(vocabularyAnnotatableElement)
-                        .Where(a => a.IsInline(this.Model)));
-            }
-        }
-
         private void EndElement(IEdmElement element)
         {
             this.VisitPrimitiveElementAnnotations(this.Model.DirectValueAnnotations(element));
             IEdmVocabularyAnnotatable vocabularyAnnotatableElement = element as IEdmVocabularyAnnotatable;
             if (vocabularyAnnotatableElement != null)
             {
-                this.VisitElementVocabularyAnnotations(
-                    this.Model.FindDeclaredVocabularyAnnotations(vocabularyAnnotatableElement)
-                        .Where(a => a.IsInline(this.Model)));
+                this.VisitElementVocabularyAnnotations(this.Model.FindDeclaredVocabularyAnnotations(vocabularyAnnotatableElement).Where(a => a.IsInline(this.Model)));
             }
 
             this.schemaWriter.WriteEndElement();
-        }
-
-        private void EndElements(IEdmElement element)
-        {
-            VisitElementAnnotations(element);
-            this.schemaWriter.WriteEndElements();
         }
     }
 }

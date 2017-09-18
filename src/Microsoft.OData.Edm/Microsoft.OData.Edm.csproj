@@ -43,6 +43,14 @@
     <Compile Include="Csdl\Semantics\CsdlSemanticsAnnotationPathExpression.cs" />
     <Compile Include="Csdl\Semantics\CsdlSemanticsTypeDefinitionReference.cs" />
     <Compile Include="Csdl\Semantics\CsdlSemanticsUntypedTypeReference.cs" />
+    <Compile Include="Csdl\Serialization\EdmModelCsdlSchemaXmlWriter.cs" />
+    <Compile Include="Csdl\Serialization\EdmModelCsdlWriter.cs" />
+    <Compile Include="Csdl\Serialization\EdmModelCsdlJsonWriter.cs" />
+    <Compile Include="Csdl\Serialization\Json\EdmModelReferenceElementsJsonVisitor.cs" />
+    <Compile Include="Csdl\Serialization\Json\SchemaJsonWriter.cs" />
+    <Compile Include="Csdl\Serialization\EdmModelCsdlXmlWriter.cs" />
+    <Compile Include="Csdl\Serialization\EdmModelCsdlSchemaJsonWriter.cs" />
+    <Compile Include="Csdl\Serialization\Json\SchemaSerializationJsonVisitor.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Csdl\Parsing\Ast\CsdlEnumMemberExpression.cs" />
     <Compile Include="Csdl\Semantics\CsdlSemanticsEnumMemberExpression.cs" />
@@ -546,6 +554,7 @@
       <DependentUpon>Microsoft.OData.Edm.tt</DependentUpon>
       <ExcludeFromStyleCop>true</ExcludeFromStyleCop>
     </Compile>
+    <None Include="packages.config" />
     <None Include="Parameterized.Microsoft.OData.Edm.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Parameterized.Microsoft.OData.Edm.cs</LastGenOutput>
@@ -575,5 +584,12 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\sln\packages\Newtonsoft.Json.10.0.3\lib\portable-net45+win8+wp8+wpa81\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(BuildExtensionsPath)\Portable.targets" />
 </Project>

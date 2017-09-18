@@ -4,9 +4,8 @@
 // </copyright>
 //---------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
-using System.Xml;
+using System.Linq;
 
 namespace Microsoft.OData.Edm.Csdl.Serialization
 {
@@ -15,43 +14,80 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
     /// </summary>
     internal class EdmModelReferenceElementsVisitor
     {
-        private readonly EdmModelCsdlSchemaWriter schemaWriter;
+        private readonly EdmModelCsdlSchemaWriter _schemaWriter;
 
-        internal EdmModelReferenceElementsVisitor(IEdmModel model, XmlWriter xmlWriter, Version edmxVersion)
+        internal EdmModelReferenceElementsVisitor(EdmModelCsdlSchemaWriter schemaWriter)
         {
-            this.schemaWriter = new EdmModelCsdlSchemaWriter(model, model.GetNamespaceAliases(), xmlWriter, edmxVersion);
+            _schemaWriter = schemaWriter;
         }
 
-        #region write IEdmModel.References for referenced models.
         internal void VisitEdmReferences(IEdmModel model)
         {
-            IEnumerable<IEdmReference> references = model.GetEdmReferences();
-            if (model != null && references != null)
+            IEnumerable<IEdmReference> references = model?.GetEdmReferences();
+            if (references == null)
             {
-                foreach (IEdmReference tmp in references)
+                return;
+            }
+
+            var edmReferences = references as IList<IEdmReference> ?? references.ToList();
+            if (edmReferences.Any())
+            {
+                _schemaWriter.WriteReferencesStart(edmReferences);
+
+                foreach (IEdmReference reference in edmReferences)
                 {
-                    this.schemaWriter.WriteReferenceElementHeader(tmp);
-                    if (tmp.Includes != null)
-                    {
-                        foreach (IEdmInclude include in tmp.Includes)
-                        {
-                            this.schemaWriter.WriteIncludeElement(include);
-                        }
-                    }
+                    _schemaWriter.WriteReferenceElementStart(reference);
 
-                    if (tmp.IncludeAnnotations != null)
-                    {
-                        foreach (IEdmIncludeAnnotations includeAnnotations in tmp.IncludeAnnotations)
-                        {
-                            this.schemaWriter.WriteIncludeAnnotationsElement(includeAnnotations);
-                        }
-                    }
+                    WriteIncludes(reference.Includes);
+                    WriteIncludeAnnotations(reference.IncludeAnnotations);
 
-                    this.schemaWriter.WriteEndElement();
+                    _schemaWriter.WriteReferenceElementEnd(reference);
                 }
+
+                _schemaWriter.WriteReferencesEnd(edmReferences);
             }
         }
 
-        #endregion
+        private void WriteIncludes(IEnumerable<IEdmInclude> includes)
+        {
+            if (includes == null)
+            {
+                return;
+            }
+
+            var edmIncludes = includes.ToList();
+            if (edmIncludes.Any())
+            {
+                _schemaWriter.WriteReferenceIncludesStart(edmIncludes);
+
+                foreach (IEdmInclude include in edmIncludes)
+                {
+                    _schemaWriter.WriteIncludeElement(include);
+                }
+
+                _schemaWriter.WriteReferenceIncludesEnd(edmIncludes);
+            }
+        }
+
+        private void WriteIncludeAnnotations(IEnumerable<IEdmIncludeAnnotations> annotations)
+        {
+            if (annotations == null)
+            {
+                return;
+            }
+
+            var edmAnnotations = annotations.ToList();
+            if (edmAnnotations.Any())
+            {
+                _schemaWriter.WriteReferenceIncludeAnnotationsStart(edmAnnotations);
+
+                foreach (IEdmIncludeAnnotations includeAnnotations in edmAnnotations)
+                {
+                    _schemaWriter.WriteIncludeAnnotationsElement(includeAnnotations);
+                }
+
+                _schemaWriter.WriteReferenceIncludeAnnotationsEnd(edmAnnotations);
+            }
+        }
     }
 }

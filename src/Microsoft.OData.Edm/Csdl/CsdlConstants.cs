@@ -229,6 +229,14 @@ namespace Microsoft.OData.Edm.Csdl
 
         #endregion
 
+        #region JSON Key Words
+
+        internal const string JsonKind = "$Kind";
+        internal const string JsonType = "$Type";
+        internal const string JsonCollection = "$Collection";
+        internal const string JsonUnderlyingType = "$UnderlyingType ";
+        #endregion
+
         internal static Dictionary<Version, string[]> SupportedVersions = new Dictionary<Version, string[]>()
         {
             { EdmConstants.EdmVersion4, new string[] { EdmOasisNamespace } },

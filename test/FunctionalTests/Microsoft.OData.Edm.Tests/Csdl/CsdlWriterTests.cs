@@ -4,16 +4,20 @@
 // </copyright>
 //---------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml;
 using Microsoft.OData.Edm.Csdl;
 using Microsoft.OData.Edm.Validation;
 using Microsoft.OData.Edm.Vocabularies;
 using Microsoft.OData.Edm.Vocabularies.V1;
+using Newtonsoft.Json;
 using Xunit;
+using Formatting = System.Xml.Formatting;
 
 namespace Microsoft.OData.Edm.Tests.Csdl
 {
@@ -29,20 +33,23 @@ namespace Microsoft.OData.Edm.Tests.Csdl
             var entityId = entity.AddStructuralProperty("Id", EdmCoreModel.Instance.GetInt32(false));
             entity.AddKeys(entityId);
             EdmStructuralProperty name1 = entity.AddStructuralProperty("Name", EdmCoreModel.Instance.GetString(false));
-            EdmStructuralProperty timeVer = entity.AddStructuralProperty("UpdatedTime", EdmCoreModel.Instance.GetDate(false));
+            EdmStructuralProperty timeVer = entity.AddStructuralProperty("UpdatedTime",
+                EdmCoreModel.Instance.GetDate(false));
             model.AddElement(entity);
 
-            SetComputedAnnotation(model, entityId);  // semantic meaning is V3's 'Identity' for Key property
-            SetComputedAnnotation(model, timeVer);   // semantic meaning is V3's 'Computed' for non-key property
+            SetComputedAnnotation(model, entityId); // semantic meaning is V3's 'Identity' for Key property
+            SetComputedAnnotation(model, timeVer); // semantic meaning is V3's 'Computed' for non-key property
 
             var entityContainer = new EdmEntityContainer("NS1", "Container");
             model.AddElement(entityContainer);
             EdmEntitySet set1 = new EdmEntitySet(entityContainer, "Products", entity);
-            model.SetOptimisticConcurrencyAnnotation(set1, new IEdmStructuralProperty[] { entityId, timeVer });
+            model.SetOptimisticConcurrencyAnnotation(set1, new IEdmStructuralProperty[] {entityId, timeVer});
             entityContainer.AddElement(set1);
 
             string csdlStr = GetCsdl(model, CsdlTarget.OData);
-            Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-16""?><edmx:Edmx Version=""4.0"" xmlns:edmx=""http://docs.oasis-open.org/odata/ns/edmx""><edmx:DataServices><Schema Namespace=""NS1"" xmlns=""http://docs.oasis-open.org/odata/ns/edm""><EntityType Name=""Product""><Key><PropertyRef Name=""Id"" /></Key><Property Name=""Id"" Type=""Edm.Int32"" Nullable=""false""><Annotation Term=""Org.OData.Core.V1.Computed"" Bool=""true"" /></Property><Property Name=""Name"" Type=""Edm.String"" Nullable=""false"" /><Property Name=""UpdatedTime"" Type=""Edm.Date"" Nullable=""false""><Annotation Term=""Org.OData.Core.V1.Computed"" Bool=""true"" /></Property></EntityType><EntityContainer Name=""Container""><EntitySet Name=""Products"" EntityType=""NS1.Product""><Annotation Term=""Org.OData.Core.V1.OptimisticConcurrency""><Collection><PropertyPath>Id</PropertyPath><PropertyPath>UpdatedTime</PropertyPath></Collection></Annotation></EntitySet></EntityContainer></Schema></edmx:DataServices></edmx:Edmx>", csdlStr);
+            Assert.Equal(
+                @"<?xml version=""1.0"" encoding=""utf-16""?><edmx:Edmx Version=""4.0"" xmlns:edmx=""http://docs.oasis-open.org/odata/ns/edmx""><edmx:DataServices><Schema Namespace=""NS1"" xmlns=""http://docs.oasis-open.org/odata/ns/edm""><EntityType Name=""Product""><Key><PropertyRef Name=""Id"" /></Key><Property Name=""Id"" Type=""Edm.Int32"" Nullable=""false""><Annotation Term=""Org.OData.Core.V1.Computed"" Bool=""true"" /></Property><Property Name=""Name"" Type=""Edm.String"" Nullable=""false"" /><Property Name=""UpdatedTime"" Type=""Edm.Date"" Nullable=""false""><Annotation Term=""Org.OData.Core.V1.Computed"" Bool=""true"" /></Property></EntityType><EntityContainer Name=""Container""><EntitySet Name=""Products"" EntityType=""NS1.Product""><Annotation Term=""Org.OData.Core.V1.OptimisticConcurrency""><Collection><PropertyPath>Id</PropertyPath><PropertyPath>UpdatedTime</PropertyPath></Collection></Annotation></EntitySet></EntityContainer></Schema></edmx:DataServices></edmx:Edmx>",
+                csdlStr);
         }
 
         [Fact]
@@ -83,7 +90,8 @@ namespace Microsoft.OData.Edm.Tests.Csdl
 
             person.AddStructuralProperty("HomeAddress", new EdmComplexTypeReference(complex, false));
             person.AddStructuralProperty("WorkAddress", new EdmComplexTypeReference(complex, false));
-            person.AddStructuralProperty("Addresses", new EdmCollectionTypeReference(new EdmCollectionType(new EdmComplexTypeReference(complex, false))));
+            person.AddStructuralProperty("Addresses",
+                new EdmCollectionTypeReference(new EdmCollectionType(new EdmComplexTypeReference(complex, false))));
 
             model.AddElement(person);
             model.AddElement(city);
@@ -98,7 +106,8 @@ namespace Microsoft.OData.Edm.Tests.Csdl
             EdmEntitySet countriesOrRegions = new EdmEntitySet(entityContainer, "CountryOrRegion", countryOrRegion);
             people.AddNavigationTarget(navP, cities, new EdmPathExpression("HomeAddress/City"));
             people.AddNavigationTarget(navP, cities, new EdmPathExpression("Addresses/City"));
-            people.AddNavigationTarget(navP2, countriesOrRegions, new EdmPathExpression("WorkAddress/DefaultNs.WorkAddress/CountryOrRegion"));
+            people.AddNavigationTarget(navP2, countriesOrRegions,
+                new EdmPathExpression("WorkAddress/DefaultNs.WorkAddress/CountryOrRegion"));
             entityContainer.AddElement(people);
             entityContainer.AddElement(cities);
             entityContainer.AddElement(countriesOrRegions);
@@ -114,32 +123,32 @@ namespace Microsoft.OData.Edm.Tests.Csdl
                 "<edmx:DataServices>" +
                 "<Schema Namespace=\"DefaultNs\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">" +
                 "<EntityType Name=\"Person\">" +
-                    "<Key><PropertyRef Name=\"UserName\" /></Key>" +
-                    "<Property Name=\"UserName\" Type=\"Edm.String\" Nullable=\"false\" />" +
-                    "<Property Name=\"HomeAddress\" Type=\"DefaultNs.Address\" Nullable=\"false\" />" +
-                    "<Property Name=\"WorkAddress\" Type=\"DefaultNs.Address\" Nullable=\"false\" />" +
-                    "<Property Name=\"Addresses\" Type=\"Collection(DefaultNs.Address)\" Nullable=\"false\" />" +
+                "<Key><PropertyRef Name=\"UserName\" /></Key>" +
+                "<Property Name=\"UserName\" Type=\"Edm.String\" Nullable=\"false\" />" +
+                "<Property Name=\"HomeAddress\" Type=\"DefaultNs.Address\" Nullable=\"false\" />" +
+                "<Property Name=\"WorkAddress\" Type=\"DefaultNs.Address\" Nullable=\"false\" />" +
+                "<Property Name=\"Addresses\" Type=\"Collection(DefaultNs.Address)\" Nullable=\"false\" />" +
                 "</EntityType>" +
                 "<EntityType Name=\"City\">" +
-                    "<Key><PropertyRef Name=\"Name\" /></Key>" +
-                    "<Property Name=\"Name\" Type=\"Edm.String\" Nullable=\"false\" />" +
+                "<Key><PropertyRef Name=\"Name\" /></Key>" +
+                "<Property Name=\"Name\" Type=\"Edm.String\" Nullable=\"false\" />" +
                 "</EntityType>" +
                 "<EntityType Name=\"CountryOrRegion\">" +
-                    "<Key><PropertyRef Name=\"Name\" /></Key>" +
-                    "<Property Name=\"Name\" Type=\"Edm.String\" Nullable=\"false\" />" +
+                "<Key><PropertyRef Name=\"Name\" /></Key>" +
+                "<Property Name=\"Name\" Type=\"Edm.String\" Nullable=\"false\" />" +
                 "</EntityType>" +
                 "<ComplexType Name=\"Address\">" +
-                    "<Property Name=\"Id\" Type=\"Edm.Int32\" Nullable=\"false\" />" +
-                    "<NavigationProperty Name=\"City\" Type=\"DefaultNs.City\" Nullable=\"false\" />" +
+                "<Property Name=\"Id\" Type=\"Edm.Int32\" Nullable=\"false\" />" +
+                "<NavigationProperty Name=\"City\" Type=\"DefaultNs.City\" Nullable=\"false\" />" +
                 "</ComplexType>" +
                 "<ComplexType Name=\"WorkAddress\" BaseType=\"DefaultNs.Address\">" +
-                    "<NavigationProperty Name=\"CountryOrRegion\" Type=\"DefaultNs.CountryOrRegion\" Nullable=\"false\" /><" +
+                "<NavigationProperty Name=\"CountryOrRegion\" Type=\"DefaultNs.CountryOrRegion\" Nullable=\"false\" /><" +
                 "/ComplexType>" +
                 "<EntityContainer Name=\"Container\">" +
                 "<EntitySet Name=\"People\" EntityType=\"DefaultNs.Person\">" +
-                    "<NavigationPropertyBinding Path=\"HomeAddress/City\" Target=\"City\" />" +
-                    "<NavigationPropertyBinding Path=\"Addresses/City\" Target=\"City\" />" +
-                    "<NavigationPropertyBinding Path=\"WorkAddress/DefaultNs.WorkAddress/CountryOrRegion\" Target=\"CountryOrRegion\" />" +
+                "<NavigationPropertyBinding Path=\"HomeAddress/City\" Target=\"City\" />" +
+                "<NavigationPropertyBinding Path=\"Addresses/City\" Target=\"City\" />" +
+                "<NavigationPropertyBinding Path=\"WorkAddress/DefaultNs.WorkAddress/CountryOrRegion\" Target=\"CountryOrRegion\" />" +
                 "</EntitySet>" +
                 "<EntitySet Name=\"City\" EntityType=\"DefaultNs.City\" />" +
                 "<EntitySet Name=\"CountryOrRegion\" EntityType=\"DefaultNs.CountryOrRegion\" />" +
@@ -190,30 +199,31 @@ namespace Microsoft.OData.Edm.Tests.Csdl
 
             string actual = GetCsdl(model, CsdlTarget.OData);
 
-            string expected = "<?xml version=\"1.0\" encoding=\"utf-16\"?><edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\">" +
-                              "<edmx:DataServices><Schema Namespace=\"DefaultNs\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">" +
-                              "<EntityType Name=\"EntityType\">" +
-                                  "<Key><PropertyRef Name=\"ID\" /></Key>" +
-                                  "<Property Name=\"ID\" Type=\"Edm.String\" Nullable=\"false\" />" +
-                                  "<Property Name=\"Complex\" Type=\"DefaultNs.ComplexType\" Nullable=\"false\" />" +
-                              "</EntityType>" +
-                              "<EntityType Name=\"NavEntityType\">" +
-                                  "<Key><PropertyRef Name=\"ID\" /></Key>" +
-                                  "<Property Name=\"ID\" Type=\"Edm.String\" Nullable=\"false\" />" +
-                              "</EntityType>" +
-                              "<ComplexType Name=\"ComplexType\">" +
-                                  "<Property Name=\"Prop1\" Type=\"Edm.Int32\" Nullable=\"false\" />" +
-                                  "<NavigationProperty Name=\"CollectionOfNav\" Type=\"Collection(DefaultNs.NavEntityType)\" />" +
-                              "</ComplexType>" +
-                              "<EntityContainer Name=\"Container\">" +
-                              "<EntitySet Name=\"Entities\" EntityType=\"DefaultNs.EntityType\">" +
-                                "<NavigationPropertyBinding Path=\"Complex/CollectionOfNav\" Target=\"NavEntities\" />" +
-                              "</EntitySet>" +
-                              "<EntitySet Name=\"NavEntities\" EntityType=\"DefaultNs.NavEntityType\" />" +
-                              "</EntityContainer>" +
-                              "</Schema>" +
-                              "</edmx:DataServices>" +
-                              "</edmx:Edmx>";
+            string expected =
+                "<?xml version=\"1.0\" encoding=\"utf-16\"?><edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\">" +
+                "<edmx:DataServices><Schema Namespace=\"DefaultNs\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">" +
+                "<EntityType Name=\"EntityType\">" +
+                "<Key><PropertyRef Name=\"ID\" /></Key>" +
+                "<Property Name=\"ID\" Type=\"Edm.String\" Nullable=\"false\" />" +
+                "<Property Name=\"Complex\" Type=\"DefaultNs.ComplexType\" Nullable=\"false\" />" +
+                "</EntityType>" +
+                "<EntityType Name=\"NavEntityType\">" +
+                "<Key><PropertyRef Name=\"ID\" /></Key>" +
+                "<Property Name=\"ID\" Type=\"Edm.String\" Nullable=\"false\" />" +
+                "</EntityType>" +
+                "<ComplexType Name=\"ComplexType\">" +
+                "<Property Name=\"Prop1\" Type=\"Edm.Int32\" Nullable=\"false\" />" +
+                "<NavigationProperty Name=\"CollectionOfNav\" Type=\"Collection(DefaultNs.NavEntityType)\" />" +
+                "</ComplexType>" +
+                "<EntityContainer Name=\"Container\">" +
+                "<EntitySet Name=\"Entities\" EntityType=\"DefaultNs.EntityType\">" +
+                "<NavigationPropertyBinding Path=\"Complex/CollectionOfNav\" Target=\"NavEntities\" />" +
+                "</EntitySet>" +
+                "<EntitySet Name=\"NavEntities\" EntityType=\"DefaultNs.NavEntityType\" />" +
+                "</EntityContainer>" +
+                "</Schema>" +
+                "</edmx:DataServices>" +
+                "</edmx:Edmx>";
 
             Assert.Equal(expected, actual);
         }
@@ -287,7 +297,8 @@ namespace Microsoft.OData.Edm.Tests.Csdl
             var entityType3 = new EdmEntityType("NS", "EntityType3", entityType2);
             var complexType1 = new EdmComplexType("NS", "ComplexType1");
             var complexType2 = new EdmComplexType("NS", "ComplexType2");
-            model.AddElements(new IEdmSchemaElement[] { entityType1, entityType2, entityType3, complexType1, complexType2 });
+            model.AddElements(new IEdmSchemaElement[]
+            {entityType1, entityType2, entityType3, complexType1, complexType2});
             entityType1.AddKeys(entityType1.AddStructuralProperty("ID", EdmPrimitiveTypeKind.Int32));
             entityType2.AddKeys(entityType2.AddStructuralProperty("ID", EdmPrimitiveTypeKind.Int32));
             var outerNav1A = entityType1.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
@@ -343,39 +354,40 @@ namespace Microsoft.OData.Edm.Tests.Csdl
                 TargetMultiplicity = EdmMultiplicity.Many
             });
             entityType1.SetNavigationPropertyPartner(
-                outerNav1B, new EdmPathExpression("OuterNavB"), outerNav2C, new EdmPathExpression("NS.EntityType3/OuterNavC"));
+                outerNav1B, new EdmPathExpression("OuterNavB"), outerNav2C,
+                new EdmPathExpression("NS.EntityType3/OuterNavC"));
             var str = GetCsdl(model, CsdlTarget.OData);
             Assert.Equal(
                 "<?xml version=\"1.0\" encoding=\"utf-16\"?>" +
-                    "<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\">" +
-                        "<edmx:DataServices>" +
-                            "<Schema Namespace=\"NS\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">" +
-                                "<EntityType Name=\"EntityType1\">" +
-                                    "<Key><PropertyRef Name=\"ID\" /></Key>" +
-                                    "<Property Name=\"ID\" Type=\"Edm.Int32\" />" +
-                                    "<Property Name=\"ComplexProp\" Type=\"Collection(NS.ComplexType1)\" Nullable=\"false\" />" +
-                                    "<NavigationProperty Name=\"OuterNavA\" Type=\"NS.EntityType2\" Nullable=\"false\" Partner=\"OuterNavA\" />" +
-                                    "<NavigationProperty Name=\"OuterNavB\" Type=\"Collection(NS.EntityType2)\" Partner=\"NS.EntityType3/OuterNavC\" />" +
-                                "</EntityType>" +
-                                "<EntityType Name=\"EntityType2\">" +
-                                    "<Key><PropertyRef Name=\"ID\" /></Key>" +
-                                    "<Property Name=\"ID\" Type=\"Edm.Int32\" />" +
-                                    "<Property Name=\"ComplexProp\" Type=\"NS.ComplexType2\" Nullable=\"false\" />" +
-                                    "<NavigationProperty Name=\"OuterNavA\" Type=\"NS.EntityType1\" Nullable=\"false\" Partner=\"OuterNavA\" />" +
-                                    "<NavigationProperty Name=\"OuterNavB\" Type=\"NS.EntityType1\" Nullable=\"false\" Partner=\"ComplexProp/InnerNav\" />" +
-                                "</EntityType>" +
-                                "<EntityType Name=\"EntityType3\" BaseType=\"NS.EntityType2\">" +
-                                    "<NavigationProperty Name=\"OuterNavC\" Type=\"Collection(NS.EntityType1)\" Partner=\"OuterNavB\" />" +
-                                "</EntityType>" +
-                                "<ComplexType Name=\"ComplexType1\">" +
-                                    "<NavigationProperty Name=\"InnerNav\" Type=\"NS.EntityType2\" Nullable=\"false\" />" +
-                                "</ComplexType>" +
-                                "<ComplexType Name=\"ComplexType2\">" +
-                                    "<NavigationProperty Name=\"InnerNav\" Type=\"NS.EntityType1\" Nullable=\"false\" />" +
-                                "</ComplexType>" +
-                            "</Schema>" +
-                        "</edmx:DataServices>" +
-                    "</edmx:Edmx>",
+                "<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\">" +
+                "<edmx:DataServices>" +
+                "<Schema Namespace=\"NS\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">" +
+                "<EntityType Name=\"EntityType1\">" +
+                "<Key><PropertyRef Name=\"ID\" /></Key>" +
+                "<Property Name=\"ID\" Type=\"Edm.Int32\" />" +
+                "<Property Name=\"ComplexProp\" Type=\"Collection(NS.ComplexType1)\" Nullable=\"false\" />" +
+                "<NavigationProperty Name=\"OuterNavA\" Type=\"NS.EntityType2\" Nullable=\"false\" Partner=\"OuterNavA\" />" +
+                "<NavigationProperty Name=\"OuterNavB\" Type=\"Collection(NS.EntityType2)\" Partner=\"NS.EntityType3/OuterNavC\" />" +
+                "</EntityType>" +
+                "<EntityType Name=\"EntityType2\">" +
+                "<Key><PropertyRef Name=\"ID\" /></Key>" +
+                "<Property Name=\"ID\" Type=\"Edm.Int32\" />" +
+                "<Property Name=\"ComplexProp\" Type=\"NS.ComplexType2\" Nullable=\"false\" />" +
+                "<NavigationProperty Name=\"OuterNavA\" Type=\"NS.EntityType1\" Nullable=\"false\" Partner=\"OuterNavA\" />" +
+                "<NavigationProperty Name=\"OuterNavB\" Type=\"NS.EntityType1\" Nullable=\"false\" Partner=\"ComplexProp/InnerNav\" />" +
+                "</EntityType>" +
+                "<EntityType Name=\"EntityType3\" BaseType=\"NS.EntityType2\">" +
+                "<NavigationProperty Name=\"OuterNavC\" Type=\"Collection(NS.EntityType1)\" Partner=\"OuterNavB\" />" +
+                "</EntityType>" +
+                "<ComplexType Name=\"ComplexType1\">" +
+                "<NavigationProperty Name=\"InnerNav\" Type=\"NS.EntityType2\" Nullable=\"false\" />" +
+                "</ComplexType>" +
+                "<ComplexType Name=\"ComplexType2\">" +
+                "<NavigationProperty Name=\"InnerNav\" Type=\"NS.EntityType1\" Nullable=\"false\" />" +
+                "</ComplexType>" +
+                "</Schema>" +
+                "</edmx:DataServices>" +
+                "</edmx:Edmx>",
                 str);
         }
 
@@ -387,7 +399,7 @@ namespace Microsoft.OData.Edm.Tests.Csdl
             var entityTypeA2 = new EdmEntityType("NS", "EntityTypeA2", entityTypeA1);
             var entityTypeA3 = new EdmEntityType("NS", "EntityTypeA3", entityTypeA2);
             var entityTypeB = new EdmEntityType("NS", "EntityTypeB");
-            model.AddElements(new IEdmSchemaElement[] { entityTypeA1, entityTypeA2, entityTypeA3, entityTypeB });
+            model.AddElements(new IEdmSchemaElement[] {entityTypeA1, entityTypeA2, entityTypeA3, entityTypeB});
             entityTypeA1.AddKeys(entityTypeA1.AddStructuralProperty("ID", EdmPrimitiveTypeKind.Int32));
             var a1Nav = entityTypeA1.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
             {
@@ -414,31 +426,33 @@ namespace Microsoft.OData.Edm.Tests.Csdl
                 Target = entityTypeA3,
                 TargetMultiplicity = EdmMultiplicity.One
             });
-            entityTypeA2.SetNavigationPropertyPartner(a1Nav, new EdmPathExpression("A1Nav"), bNav1, new EdmPathExpression("BNav1"));
-            entityTypeA2.SetNavigationPropertyPartner(a3Nav, new EdmPathExpression("NS.EntityTypeA3/A3Nav"), bNav2, new EdmPathExpression("BNav2"));
+            entityTypeA2.SetNavigationPropertyPartner(a1Nav, new EdmPathExpression("A1Nav"), bNav1,
+                new EdmPathExpression("BNav1"));
+            entityTypeA2.SetNavigationPropertyPartner(a3Nav, new EdmPathExpression("NS.EntityTypeA3/A3Nav"), bNav2,
+                new EdmPathExpression("BNav2"));
             var str = GetCsdl(model, CsdlTarget.OData);
             Assert.Equal(
                 "<?xml version=\"1.0\" encoding=\"utf-16\"?>" +
                 "<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\">" +
-                    "<edmx:DataServices>" +
-                        "<Schema Namespace=\"NS\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">" +
-                            "<EntityType Name=\"EntityTypeA1\">" +
-                                "<Key><PropertyRef Name=\"ID\" /></Key>" +
-                                "<Property Name=\"ID\" Type=\"Edm.Int32\" />" +
-                                "<NavigationProperty Name=\"A1Nav\" Type=\"NS.EntityTypeB\" Nullable=\"false\" Partner=\"BNav1\" />" +
-                            "</EntityType>" +
-                            "<EntityType Name=\"EntityTypeA2\" BaseType=\"NS.EntityTypeA1\" />" +
-                            "<EntityType Name=\"EntityTypeA3\" BaseType=\"NS.EntityTypeA2\">" +
-                                "<NavigationProperty Name=\"A3Nav\" Type=\"NS.EntityTypeB\" Nullable=\"false\" Partner=\"BNav2\" />" +
-                            "</EntityType>" +
-                            "<EntityType Name=\"EntityTypeB\">" +
-                                "<Key><PropertyRef Name=\"ID\" /></Key>" +
-                                "<Property Name=\"ID\" Type=\"Edm.Int32\" />" +
-                                "<NavigationProperty Name=\"BNav1\" Type=\"NS.EntityTypeA2\" Nullable=\"false\" Partner=\"A1Nav\" />" +
-                                "<NavigationProperty Name=\"BNav2\" Type=\"NS.EntityTypeA3\" Nullable=\"false\" Partner=\"NS.EntityTypeA3/A3Nav\" />" +
-                            "</EntityType>" +
-                        "</Schema>" +
-                    "</edmx:DataServices>" +
+                "<edmx:DataServices>" +
+                "<Schema Namespace=\"NS\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">" +
+                "<EntityType Name=\"EntityTypeA1\">" +
+                "<Key><PropertyRef Name=\"ID\" /></Key>" +
+                "<Property Name=\"ID\" Type=\"Edm.Int32\" />" +
+                "<NavigationProperty Name=\"A1Nav\" Type=\"NS.EntityTypeB\" Nullable=\"false\" Partner=\"BNav1\" />" +
+                "</EntityType>" +
+                "<EntityType Name=\"EntityTypeA2\" BaseType=\"NS.EntityTypeA1\" />" +
+                "<EntityType Name=\"EntityTypeA3\" BaseType=\"NS.EntityTypeA2\">" +
+                "<NavigationProperty Name=\"A3Nav\" Type=\"NS.EntityTypeB\" Nullable=\"false\" Partner=\"BNav2\" />" +
+                "</EntityType>" +
+                "<EntityType Name=\"EntityTypeB\">" +
+                "<Key><PropertyRef Name=\"ID\" /></Key>" +
+                "<Property Name=\"ID\" Type=\"Edm.Int32\" />" +
+                "<NavigationProperty Name=\"BNav1\" Type=\"NS.EntityTypeA2\" Nullable=\"false\" Partner=\"A1Nav\" />" +
+                "<NavigationProperty Name=\"BNav2\" Type=\"NS.EntityTypeA3\" Nullable=\"false\" Partner=\"NS.EntityTypeA3/A3Nav\" />" +
+                "</EntityType>" +
+                "</Schema>" +
+                "</edmx:DataServices>" +
                 "</edmx:Edmx>",
                 str);
         }
@@ -465,37 +479,39 @@ namespace Microsoft.OData.Edm.Tests.Csdl
         public void ShouldWriteOptionalParameters()
         {
             string expected =
-            "<?xml version=\"1.0\" encoding=\"utf-16\"?>" +
-            "<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\">" +
-              "<edmx:DataServices>" +
+                "<?xml version=\"1.0\" encoding=\"utf-16\"?>" +
+                "<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\">" +
+                "<edmx:DataServices>" +
                 "<Schema Namespace=\"test\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">" +
-                  "<Function Name=\"TestFunction\">" +
-                    "<Parameter Name=\"requiredParam\" Type=\"Edm.String\" Nullable=\"false\" />" +
-                    "<Parameter Name=\"optionalParam\" Type=\"Edm.String\" Nullable=\"false\">" +
-                        "<Annotation Term=\"Org.OData.Core.V1.OptionalParameter\" />" +
-                    "</Parameter>" +
-                    "<Parameter Name=\"optionalParamWithDefault\" Type=\"Edm.String\" Nullable=\"false\">" +
-                        "<Annotation Term=\"Org.OData.Core.V1.OptionalParameter\">" +
-                          "<Record>" +
-                            "<PropertyValue Property=\"DefaultValue\" String=\"Smith\" />" +
-                          "</Record>" +
-                        "</Annotation>" +
-                    "</Parameter>" +
-                    "<ReturnType Type=\"Edm.String\" Nullable=\"false\" />" +
-                  "</Function>" +
-                  "<EntityContainer Name=\"Default\">" +
-                    "<FunctionImport Name=\"TestFunction\" Function=\"test.TestFunction\" />" +
-                  "</EntityContainer>" +
+                "<Function Name=\"TestFunction\">" +
+                "<Parameter Name=\"requiredParam\" Type=\"Edm.String\" Nullable=\"false\" />" +
+                "<Parameter Name=\"optionalParam\" Type=\"Edm.String\" Nullable=\"false\">" +
+                "<Annotation Term=\"Org.OData.Core.V1.OptionalParameter\" />" +
+                "</Parameter>" +
+                "<Parameter Name=\"optionalParamWithDefault\" Type=\"Edm.String\" Nullable=\"false\">" +
+                "<Annotation Term=\"Org.OData.Core.V1.OptionalParameter\">" +
+                "<Record>" +
+                "<PropertyValue Property=\"DefaultValue\" String=\"Smith\" />" +
+                "</Record>" +
+                "</Annotation>" +
+                "</Parameter>" +
+                "<ReturnType Type=\"Edm.String\" Nullable=\"false\" />" +
+                "</Function>" +
+                "<EntityContainer Name=\"Default\">" +
+                "<FunctionImport Name=\"TestFunction\" Function=\"test.TestFunction\" />" +
+                "</EntityContainer>" +
                 "</Schema>" +
-              "</edmx:DataServices>" +
-            "</edmx:Edmx>";
+                "</edmx:DataServices>" +
+                "</edmx:Edmx>";
 
-            var stringTypeReference = new EdmStringTypeReference(EdmCoreModel.Instance.GetPrimitiveType(EdmPrimitiveTypeKind.String), false);
+            var stringTypeReference =
+                new EdmStringTypeReference(EdmCoreModel.Instance.GetPrimitiveType(EdmPrimitiveTypeKind.String), false);
             var model = new EdmModel();
             var function = new EdmFunction("test", "TestFunction", stringTypeReference);
             var requiredParam = new EdmOperationParameter(function, "requiredParam", stringTypeReference);
             var optionalParam = new EdmOptionalParameter(function, "optionalParam", stringTypeReference, null);
-            var optionalParamWithDefault = new EdmOptionalParameter(function, "optionalParamWithDefault", stringTypeReference, "Smith");
+            var optionalParamWithDefault = new EdmOptionalParameter(function, "optionalParamWithDefault",
+                stringTypeReference, "Smith");
             function.AddParameter(requiredParam);
             function.AddParameter(optionalParam);
             function.AddParameter(optionalParamWithDefault);
@@ -527,6 +543,175 @@ namespace Microsoft.OData.Edm.Tests.Csdl
             }
 
             return edmx;
+        }
+
+        private string GetCsdlJson(IEdmModel model)
+        {
+            string edmx = string.Empty;
+
+            var builder = new StringBuilder();
+            StringWriter sw = new StringWriter(builder);
+            using (JsonTextWriter writer = new JsonTextWriter(sw))
+            {
+                writer.Formatting = Newtonsoft.Json.Formatting.Indented;
+
+                IEnumerable<EdmError> errors;
+                CsdlWriter.TryWriteCsdl(model, writer, out errors);
+                writer.Flush();
+
+                edmx = sw.ToString();
+            }
+
+            return edmx;
+        }
+
+        [Fact]
+        public void VerifyReferenceTest()
+        {
+            var model = new EdmModel();
+            var entity = new EdmEntityType("NS1", "Product");
+            var entityId = entity.AddStructuralProperty("Id", EdmCoreModel.Instance.GetInt32(false));
+            entity.AddKeys(entityId);
+            EdmStructuralProperty name1 = entity.AddStructuralProperty("Name", EdmCoreModel.Instance.GetString(false));
+            EdmStructuralProperty timeVer = entity.AddStructuralProperty("UpdatedTime",
+                EdmCoreModel.Instance.GetDate(false));
+            model.AddElement(entity);
+
+            var edmAction = new EdmAction("n.s", "DoStuff", EdmCoreModel.Instance.GetString(true), true /*isBound*/,
+                null /*entitySetPath*/);
+            edmAction.AddParameter("param1", EdmCoreModel.Instance.GetString(true));
+
+            var edmAction3 = new EdmAction("n.s", "DoStuff", EdmCoreModel.Instance.GetString(true), true /*isBound*/,
+                null /*entitySetPath*/);
+            edmAction3.AddParameter("param1", EdmCoreModel.Instance.GetString(true));
+            edmAction3.AddParameter("param3", EdmCoreModel.Instance.GetString(true));
+
+            var edmAction2 = new EdmAction("n.s", "DoStuff", EdmCoreModel.Instance.GetString(true), false /*isBound*/,
+                null /*entitySetPath*/);
+            edmAction2.AddParameter("param2", EdmCoreModel.Instance.GetString(true));
+            model.AddElement(edmAction);
+            model.AddElement(edmAction2);
+
+            var entityContainer = new EdmEntityContainer("NS1", "Container");
+            model.AddElement(entityContainer);
+            EdmEntitySet set1 = new EdmEntitySet(entityContainer, "Products", entity);
+            model.SetOptimisticConcurrencyAnnotation(set1, new IEdmStructuralProperty[] {entityId, timeVer});
+            entityContainer.AddElement(set1);
+
+            EdmSingleton singleton = new EdmSingleton(entityContainer, "MySingleton", entity);
+            entityContainer.AddElement(singleton);
+
+            var action1Import = new EdmActionImport(entityContainer, "name", new EdmAction("n", "name", null));
+            var functionImport = new EdmFunctionImport(entityContainer, "name",
+                new EdmFunction("n", "name", EdmCoreModel.Instance.GetString(true)));
+            entityContainer.AddElement(action1Import);
+            entityContainer.AddElement(functionImport);
+            /*
+            EdmModel model1 = new EdmModel();
+            entity = new EdmEntityType("NS2", "Product");
+            entityId = entity.AddStructuralProperty("Id", EdmCoreModel.Instance.GetInt32(false));
+            entity.AddKeys(entityId);
+            name1 = entity.AddStructuralProperty("Name", EdmCoreModel.Instance.GetString(false));
+            timeVer = entity.AddStructuralProperty("UpdatedTime", EdmCoreModel.Instance.GetDate(false));
+            model1.AddElement(entity);
+
+            entityContainer = new EdmEntityContainer("NS2", "Container");
+            model1.AddElement(entityContainer);
+            set1 = new EdmEntitySet(entityContainer, "Products", entity);
+            model1.SetOptimisticConcurrencyAnnotation(set1, new IEdmStructuralProperty[] { entityId, timeVer });
+            entityContainer.AddElement(set1);
+
+            model.AddReferencedModel(model1);*/
+
+            EdmReference result = new EdmReference(new Uri("http://any"));
+            result.AddInclude(new EdmInclude("abc", "NSa"));
+            result.AddInclude(new EdmInclude("xyz", "NSx"));
+
+            result.AddIncludeAnnotations(new EdmIncludeAnnotations("123", "456", "789"));
+            model.SetEdmReferences(new List<IEdmReference> {result});
+
+            string csdlStr = GetCsdlJson(model);
+
+            string xml = GetCsdl(model, CsdlTarget.OData);
+
+            Assert.Equal(xml, csdlStr);
+        }
+
+        [Fact]
+        public void VerifyReferenceTest2()
+        {
+            var model = new EdmModel();
+
+            //
+            var enumType = new EdmEnumType("DefaultNs", "Color");
+            var blue = enumType.AddMember("Blue", new EdmEnumMemberValue(0));
+            enumType.AddMember("White", new EdmEnumMemberValue(1));
+            model.AddElement(enumType);
+
+            var person = new EdmEntityType("DefaultNs", "Person");
+            var entityId = person.AddStructuralProperty("UserName", EdmCoreModel.Instance.GetString(false));
+            person.AddKeys(entityId);
+
+            var city = new EdmEntityType("DefaultNs", "City");
+            var cityId = city.AddStructuralProperty("Name", EdmCoreModel.Instance.GetString(false));
+            city.AddKeys(cityId);
+
+            var countryOrRegion = new EdmEntityType("DefaultNs", "CountryOrRegion");
+            var countryId = countryOrRegion.AddStructuralProperty("Name", EdmCoreModel.Instance.GetString(false));
+            countryOrRegion.AddKeys(countryId);
+
+            var complex = new EdmComplexType("DefaultNs", "Address");
+            complex.AddStructuralProperty("Id", EdmCoreModel.Instance.GetInt32(false));
+            var navP = complex.AddUnidirectionalNavigation(
+                new EdmNavigationPropertyInfo()
+                {
+                    Name = "City",
+                    Target = city,
+                    TargetMultiplicity = EdmMultiplicity.One,
+                });
+
+            var derivedComplex = new EdmComplexType("DefaultNs", "WorkAddress", complex);
+            var navP2 = derivedComplex.AddUnidirectionalNavigation(
+                new EdmNavigationPropertyInfo()
+                {
+                    Name = "CountryOrRegion",
+                    Target = countryOrRegion,
+                    TargetMultiplicity = EdmMultiplicity.One,
+                });
+
+            person.AddStructuralProperty("HomeAddress", new EdmComplexTypeReference(complex, false));
+            person.AddStructuralProperty("WorkAddress", new EdmComplexTypeReference(complex, false));
+            person.AddStructuralProperty("Addresses",
+                new EdmCollectionTypeReference(new EdmCollectionType(new EdmComplexTypeReference(complex, false))));
+
+            model.AddElement(person);
+            model.AddElement(city);
+            model.AddElement(countryOrRegion);
+            model.AddElement(complex);
+            model.AddElement(derivedComplex);
+
+            var entityContainer = new EdmEntityContainer("DefaultNs", "Container");
+            model.AddElement(entityContainer);
+            EdmEntitySet people = new EdmEntitySet(entityContainer, "People", person);
+            EdmEntitySet cities = new EdmEntitySet(entityContainer, "City", city);
+            EdmEntitySet countriesOrRegions = new EdmEntitySet(entityContainer, "CountryOrRegion", countryOrRegion);
+            people.AddNavigationTarget(navP, cities, new EdmPathExpression("HomeAddress/City"));
+            people.AddNavigationTarget(navP, cities, new EdmPathExpression("Addresses/City"));
+            people.AddNavigationTarget(navP2, countriesOrRegions,
+                new EdmPathExpression("WorkAddress/DefaultNs.WorkAddress/CountryOrRegion"));
+            entityContainer.AddElement(people);
+            entityContainer.AddElement(cities);
+            entityContainer.AddElement(countriesOrRegions);
+
+            IEnumerable<EdmError> actualErrors = null;
+            model.Validate(out actualErrors);
+            Assert.Equal(actualErrors.Count(), 0);
+
+            string actual = GetCsdl(model, CsdlTarget.OData);
+
+            string json = GetCsdlJson(model);
+
+            Assert.Equal(actual, json);
         }
     }
 }
