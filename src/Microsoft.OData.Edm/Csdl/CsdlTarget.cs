@@ -19,6 +19,10 @@ namespace Microsoft.OData.Edm.Csdl
         /// <summary>
         /// The target is OData.
         /// </summary>
-        OData
+        OData,
+
+        Json,
+
+        Swagger
     }
 }

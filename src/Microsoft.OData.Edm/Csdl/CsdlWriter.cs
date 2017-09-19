@@ -6,17 +6,20 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Xml;
 using Microsoft.OData.Edm.Csdl.Serialization;
 using Microsoft.OData.Edm.Validation;
-using Newtonsoft.Json;
+using Microsoft.OData.Json;
+using JsonWriter = Newtonsoft.Json.JsonWriter;
 
 namespace Microsoft.OData.Edm.Csdl
 {
     /// <summary>
     /// Provides CSDL serialization services (XML or JSON) for EDM models.
     /// </summary>
+    [CLSCompliant(false)]
     public static class CsdlWriter
     {
         /// <summary>
@@ -48,6 +51,35 @@ namespace Microsoft.OData.Edm.Csdl
             EdmUtil.CheckArgumentNull(writer, "writer");
 
             return TryWriteCsdl(model, null, writer, CsdlTarget.OData, out errors);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="writer"></param>
+        /// <param name="target"></param>
+        /// <param name="errors"></param>
+        /// <returns></returns>
+        public static bool TryWriteCsdl(IEdmModel model, Stream stream, CsdlTarget target,
+            out IEnumerable<EdmError> errors)
+        {
+            EdmUtil.CheckArgumentNull(model, "model");
+          //  EdmUtil.CheckArgumentNull(writer, "writer");
+
+            switch (target)
+            {
+                case CsdlTarget.EntityFramework:
+                case CsdlTarget.OData:
+                    XmlWriter xmlWriter = XmlWriter.Create(stream);
+                    return TryWriteCsdl(model, xmlWriter, target, out errors);
+                case CsdlTarget.Json:
+                    break;
+                case CsdlTarget.Swagger:
+                    break;
+            }
+            errors = null;
+            return false;
         }
 
         private static bool TryWriteCsdl(IEdmModel model, XmlWriter xmlWriter, JsonWriter jsonWriter, CsdlTarget target, out IEnumerable<EdmError> errors)

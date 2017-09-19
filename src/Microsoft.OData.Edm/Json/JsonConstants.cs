@@ -6,10 +6,6 @@
 
 namespace Microsoft.OData.Json
 {
-    #region Namespaces
-
-#endregion Namespaces
-#if false
     /// <summary>
     /// Constants for the JSON format.
     /// </summary>
@@ -165,5 +161,4 @@ namespace Microsoft.OData.Json
         /// </summary>
         internal const char QuoteCharacter = '"';
     }
-#endif
 }

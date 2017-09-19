@@ -7,7 +7,7 @@
 namespace Microsoft.OData
 {
     using System.Diagnostics.CodeAnalysis;
-#if false
+
     /// <summary>
     /// Enumeration describing the various serialization formats for dates in JSON
     /// </summary>
@@ -24,5 +24,4 @@ namespace Microsoft.OData
         [SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", Justification = "ISO is a standards body and should be represented as all-uppercase in the API.")]
         ISO8601DateTime
     }
-#endif
 }

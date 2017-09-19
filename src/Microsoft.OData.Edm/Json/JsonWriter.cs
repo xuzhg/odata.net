@@ -4,24 +4,22 @@
 // </copyright>
 //---------------------------------------------------------------------
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using Microsoft.OData.Edm;
+
 namespace Microsoft.OData.Json
 {
-    #region Namespaces
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
-    using System.IO;
-    using Microsoft.OData.Edm;
-    #endregion Namespaces
-
-#if false
     /// <summary>
     /// Writer for the JSON format. http://www.json.org
     /// </summary>
+    [CLSCompliant(false)]
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable", Justification = "This class does not own the underlying stream/writer and thus should never dispose it.")]
-    internal sealed class JsonWriter : IJsonWriter
+    public sealed class JsonWriter : IJsonWriter
     {
         /// <summary>
         /// Writer to write text into.
@@ -44,7 +42,7 @@ namespace Microsoft.OData.Json
         /// </summary>
         /// <param name="writer">Writer to which text needs to be written.</param>
         /// <param name="isIeee754Compatible">if it is IEEE754Compatible</param>
-        internal JsonWriter(TextWriter writer, bool isIeee754Compatible)
+        public JsonWriter(TextWriter writer, bool isIeee754Compatible)
         {
             this.writer = new NonIndentedTextWriter(writer);
             this.scopes = new Stack<Scope>();
@@ -493,5 +491,4 @@ namespace Microsoft.OData.Json
             }
         }
     }
-#endif
 }

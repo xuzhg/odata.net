@@ -17,3 +17,5 @@
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Microsoft.OData.Edm.Tests.NetCore" + AssemblyRef.TestPublicKey)]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Microsoft.OData.Core.Tests.NetCore" + AssemblyRef.TestPublicKey)]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Microsoft.Spatial.Tests.NetCore" + AssemblyRef.TestPublicKey)]
+
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Microsoft.OData.Core" + AssemblyRef.ProductPublicKey)]

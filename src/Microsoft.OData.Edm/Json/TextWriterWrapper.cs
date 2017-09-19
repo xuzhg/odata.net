@@ -4,16 +4,13 @@
 // </copyright>
 //---------------------------------------------------------------------
 
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+
 namespace Microsoft.OData.Json
 {
-    #region Namespaces
-    using System;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Text;
-    #endregion Namespaces
-
-#if false
     /// <summary>
     /// Writes text non indented
     /// </summary>
@@ -38,10 +35,7 @@ namespace Microsoft.OData.Json
         /// </summary>
         public override Encoding Encoding
         {
-            get
-            {
-                return this.writer.Encoding;
-            }
+            get { return this.writer.Encoding; }
         }
 
         /// <summary>
@@ -49,10 +43,7 @@ namespace Microsoft.OData.Json
         /// </summary>
         public override string NewLine
         {
-            get
-            {
-                return this.writer.NewLine;
-            }
+            get { return this.writer.NewLine; }
         }
 
         /// <summary>
@@ -89,7 +80,4 @@ namespace Microsoft.OData.Json
             throw new NotImplementedException();
         }
     }
-#endif
 }
-
-

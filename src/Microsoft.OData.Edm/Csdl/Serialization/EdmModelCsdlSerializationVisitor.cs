@@ -786,11 +786,11 @@ namespace Microsoft.OData.Edm.Csdl.Serialization
 
             this.schemaWriter.WriteEndElement();
         }
-
+        /*
         private void EndElements(IEdmElement element)
         {
             VisitElementAnnotations(element);
             this.schemaWriter.WriteEndElements();
-        }
+        }*/
     }
 }

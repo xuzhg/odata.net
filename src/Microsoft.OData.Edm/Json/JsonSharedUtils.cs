@@ -14,7 +14,7 @@ namespace Microsoft.OData.Json
     /// <summary>
     /// Shared JSON util code for ODataLib and Server.
     /// </summary>
-    internal static class JsonSharedUtils2
+    internal static class JsonSharedUtils
     {
         /// <summary>
         /// Determines if the given double is serialized as a string in JSON.
@@ -26,6 +26,7 @@ namespace Microsoft.OData.Json
             return Double.IsInfinity(value) || Double.IsNaN(value);
         }
 
+        /*
         /// <summary>
         /// Determines if the given primitive value is of a basic type where we can rely on just the JSON representation to convey type information.
         /// If so, we don't have to write the type name.
@@ -59,6 +60,6 @@ namespace Microsoft.OData.Json
                 default:
                     return false;
             }
-        }
+        }*/
     }
 }

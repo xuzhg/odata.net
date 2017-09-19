@@ -4,18 +4,17 @@
 // </copyright>
 //---------------------------------------------------------------------
 
+using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Xml;
+using Microsoft.OData.Edm;
+using Microsoft.OData.Edm.Csdl;
+
 namespace Microsoft.OData.Json
 {
-    #region Namespaces
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
-    using System.IO;
-    using System.Xml;
-    using Microsoft.OData.Edm;
-    #endregion Namespaces
-#if false
     /// <summary>
     /// Provides helper method for converting data values to and from the OData JSON format.
     /// </summary>
@@ -454,5 +453,4 @@ namespace Microsoft.OData.Json
             return specialCharToEscapedStringMap;
         }
     }
-#endif
 }
