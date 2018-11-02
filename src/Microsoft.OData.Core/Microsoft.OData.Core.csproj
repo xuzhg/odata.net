@@ -294,6 +294,9 @@
     <Compile Include="ODataEntityReferenceLinks.cs" />
     <Compile Include="ODataEntitySetInfo.cs" />
     <Compile Include="ODataResource.cs" />
+    <Compile Include="ODataNestedItem.cs" />
+    <Compile Include="ODataNestedResourceSetValue.cs" />
+    <Compile Include="ODataNestedResourceValue.cs" />
     <Compile Include="ODataEnumValue.cs" />
     <Compile Include="ODataError.cs" />
     <Compile Include="ODataErrorException.cs" />
@@ -302,6 +305,7 @@
     <Compile Include="ODataResourceSerializationInfo.cs" />
     <Compile Include="ODataResourceTypeContext.cs" />
     <Compile Include="ODataResourceSetBase.cs" />
+    <Compile Include="ODataNestedValue.cs" />
     <Compile Include="ODataFormat.cs" />
     <Compile Include="ODataFunction.cs" />
     <Compile Include="ODataFunctionImportInfo.cs" />

@@ -761,6 +761,18 @@
     <Compile Include="..\ODataNestedResourceInfo.cs">
       <Link>ODataNestedResourceInfo.cs</Link>
     </Compile>
+    <Compile Include="..\ODataNestedItem.cs">
+      <Link>ODataNestedItem.cs</Link>
+    </Compile>
+    <Compile Include="..\ODataNestedResourceSetValue.cs">
+      <Link>ODataNestedResourceSetValue.cs</Link>
+    </Compile>
+    <Compile Include="..\ODataNestedResourceValue.cs">
+      <Link>ODataNestedResourceValue.cs</Link>
+    </Compile>
+    <Compile Include="..\ODataNestedValue.cs">
+      <Link>ODataNestedValue.cs</Link>
+    </Compile>
     <Compile Include="..\ODataNestedResourceInfoSerializationInfo.cs">
       <Link>ODataNestedResourceInfoSerializationInfo.cs</Link>
     </Compile>

@@ -175,6 +175,94 @@ namespace Microsoft.OData
         }
 
         /// <summary>
+        /// Converts a <see cref="ODataNestedResourceValue"/> to a string for use in a Url.
+        /// </summary>
+        /// <param name="resource">Nested resource to convert.</param>
+        /// <param name="model">Model to be used for validation. User model is optional. The EdmLib core model is expected as a minimum.</param>
+        /// <returns>A string representation of <paramref name="resource"/> to be added to a Url.</returns>
+        internal static string ConvertToNestedResourceLiteral(ODataNestedResourceValue resource, IEdmModel model, ODataVersion version)
+        {
+            ExceptionUtils.CheckArgumentNotNull(resource, "resource");
+            ExceptionUtils.CheckArgumentNotNull(model, "model");
+
+            return ConverToJsonLightLiteral(
+                model,
+                context =>
+                {
+                    ODataWriter writer = context.CreateODataUriParameterResourceWriter(null, null);
+                    WriteNestedResourceValue(writer, resource);
+                });
+        }
+
+        /// <summary>
+        /// Converts a <see cref="ODataNestedResourceSetValue"/> to a string for use in a Url.
+        /// </summary>
+        /// <param name="resourceSet">Nested resource set to convert.</param>
+        /// <param name="model">Model to be used for validation. User model is optional. The EdmLib core model is expected as a minimum.</param>
+        /// <returns>A string representation of <paramref name="resourceSet"/> to be added to a Url.</returns>
+        internal static string ConvertToNestedResourceSetLiteral(ODataNestedResourceSetValue resourceSet, IEdmModel model, ODataVersion version)
+        {
+            ExceptionUtils.CheckArgumentNotNull(resourceSet, "resourceSet");
+            ExceptionUtils.CheckArgumentNotNull(model, "model");
+
+            return ConverToJsonLightLiteral(
+                model,
+                context =>
+                {
+                    ODataWriter writer = context.CreateODataUriParameterResourceSetWriter(null, null);
+                    WriteNestedResourceSetValue(writer, resourceSet);
+                });
+        }
+
+        /// <summary>
+        /// Converts the given string <paramref name="value"/> to an <see cref="ODataNestedValue"/> and returns it.
+        /// </summary>
+        /// <remarks>Does not handle primitive values.</remarks>
+        /// <param name="value">Value to be deserialized.</param>
+        /// <param name="model">Model to use for verification.</param>
+        /// <param name="version">The OData version.</param>
+        /// <param name="typeReference">Expected type reference from deserialization.</param>
+        /// <returns>An <see cref="ODataNestedValue"/> that results from the deserialization of <paramref name="value"/>.</returns>
+        internal static ODataNestedValue ConvertFromNestedValueLiteral(string value, IEdmModel model, ODataVersion version,
+            IEdmTypeReference typeReference)
+        {
+            ExceptionUtils.CheckArgumentNotNull(model, "model");
+            ExceptionUtils.CheckArgumentNotNull(typeReference, "typeReference");
+
+            ODataMessageReaderSettings settings = new ODataMessageReaderSettings();
+            settings.Validations &= ~ValidationKinds.ThrowOnUndeclaredPropertyForNonOpenType;
+            settings.Version = version;
+
+            using (StringReader stringReader = new StringReader(value))
+            {
+                ODataMessageInfo messageInfo = new ODataMessageInfo
+                {
+                    MediaType = new ODataMediaType(MimeConstants.MimeApplicationType, MimeConstants.MimeJsonSubType),
+                    Model = model,
+                    IsResponse = false,
+                    IsAsync = false,
+                    MessageStream = null,
+                };
+
+                using (ODataJsonLightInputContext context = new ODataJsonLightInputContext(stringReader, messageInfo, settings))
+                {
+                    ODataReader reader;
+                    if (typeReference.IsCollection())
+                    {
+                        IEdmCollectionTypeReference collectionType = typeReference.AsCollection();
+                        reader = context.CreateUriParameterResourceSetReader(null, collectionType.ElementType().AsStructured().StructuredDefinition());
+                    }
+                    else
+                    {
+                        reader = context.CreateUriParameterResourceReader(null, typeReference.ToStructuredType());
+                    }
+
+                    return ReadNestedValue(reader);
+                }
+            }
+        }
+
+        /// <summary>
         /// Converts a <see cref="ODataResourceBase"/> to a string for use in a Url.
         /// </summary>
         /// <param name="resource">Instance to convert.</param>
@@ -487,6 +575,92 @@ namespace Microsoft.OData
         }
 
         /// <summary>
+        /// Writes an <see cref="ODataNestedResourceSetValue"/>.
+        /// </summary>
+        /// <param name="writer">The <see cref="ODataWriter"/> to use to write the (deleted) resource.</param>
+        /// <param name="resource">The resource, or deleted resource, to write.</param>
+        private static void WriteNestedResourceSetValue(ODataWriter writer, ODataNestedResourceSetValue nestedResourceSet)
+        {
+            WriteStartResourceSet(writer, nestedResourceSet.ResourceSet);
+
+            if (nestedResourceSet.NestedResources != null)
+            {
+                foreach (var item in nestedResourceSet.NestedResources)
+                {
+                    WriteNestedResourceValue(writer, item);
+                }
+            }
+
+            writer.WriteEnd();
+        }
+
+        /// <summary>
+        /// Writes an <see cref="ODataNestedResourceValue"/>.
+        /// </summary>
+        /// <param name="writer">The <see cref="ODataWriter"/> to use to write the (deleted) resource.</param>
+        /// <param name="nestedResourceValue">The nested resource to write.</param>
+        private static void WriteNestedResourceValue(ODataWriter writer, ODataNestedResourceValue nestedResourceValue)
+        {
+            WriteStartResource(writer, nestedResourceValue.Resource);
+
+            if (nestedResourceValue.NestedItems != null)
+            {
+                foreach (var item in nestedResourceValue.NestedItems)
+                {
+                    WriteNestedResourceItem(writer, item);
+                }
+            }
+
+            writer.WriteEnd();
+        }
+
+        /// <summary>
+        /// Writes an <see cref="ODataNestedItem"/>.
+        /// </summary>
+        /// <param name="writer">The <see cref="ODataWriter"/> to use to write the (deleted) resource.</param>
+        /// <param name="nestedItem">The nested item to write.</param>
+        private static void WriteNestedResourceItem(ODataWriter writer, ODataNestedItem nestedItem)
+        {
+            // skip the "null" nested item.
+            if (nestedItem == null)
+            {
+                return;
+            }
+
+            writer.WriteStart(nestedItem.NestedResourceInfo);
+
+            bool isCollection = nestedItem.NestedResourceInfo.IsCollection.HasValue && nestedItem.NestedResourceInfo.IsCollection.Value;
+            if (nestedItem.NestedValue == null)
+            {
+                if (isCollection)
+                {
+                    writer.WriteStart(new ODataResourceSet());
+                }
+                else
+                {
+                    writer.WriteStart(resource: null);
+                }
+
+                writer.WriteEnd();
+            }
+            else
+            {
+                if (isCollection)
+                {
+                    Debug.Assert(nestedItem.NestedValue is ODataNestedResourceSetValue);
+                    WriteNestedResourceSetValue(writer, (ODataNestedResourceSetValue)(nestedItem.NestedValue));
+                }
+                else
+                {
+                    Debug.Assert(nestedItem.NestedValue is ODataNestedResourceValue);
+                    WriteNestedResourceValue(writer, (ODataNestedResourceValue)(nestedItem.NestedValue));
+                }
+            }
+
+            writer.WriteEnd();
+        }
+
+        /// <summary>
         /// Writes an <see cref="ODataResourceBase"/> as either a resource or a deleted resource.
         /// </summary>
         /// <param name="writer">The <see cref="ODataWriter"/> to use to write the (deleted) resource.</param>
@@ -502,6 +676,25 @@ namespace Microsoft.OData
             {
                 // will write a null resource if resource is not an ODataResource
                 writer.WriteStart(resource as ODataResource);
+            }
+        }
+
+        /// <summary>
+        /// Writes an <see cref="ODataResourceSetBase"/> as either a resource or a deleted resource.
+        /// </summary>
+        /// <param name="writer">The <see cref="ODataWriter"/> to use to write the (deleted) resource.</param>
+        /// <param name="resource">The resource, or deleted resource, to write.</param>
+        private static void WriteStartResourceSet(ODataWriter writer, ODataResourceSetBase resourceSet)
+        {
+            ODataDeltaResourceSet deltaResourceSet = resourceSet as ODataDeltaResourceSet;
+            if (deltaResourceSet != null)
+            {
+                writer.WriteStart(deltaResourceSet);
+            }
+            else
+            {
+                // will write a null resource if resource is not an ODataResource
+                writer.WriteStart(resourceSet as ODataResourceSet);
             }
         }
 
@@ -570,6 +763,143 @@ namespace Microsoft.OData
                     return new StreamReader(stream).ReadToEnd();
                 }
             }
+        }
+
+        /// <summary>
+        /// Read and return the <see cref="ODataNestedValue"/>.
+        /// </summary>
+        /// <param name="reader">The OData reader.</param>
+        /// <returns>The <see cref="ODataNestedValue"/>.</returns>
+        private static ODataNestedValue ReadNestedValue(ODataReader reader)
+        {
+            if (reader == null)
+            {
+                throw Error.ArgumentNull("reader");
+            }
+
+            ODataNestedValue topLevelItem = null;
+            Stack<object> itemsStack = new Stack<object>();
+
+            while (reader.Read())
+            {
+                switch (reader.State)
+                {
+                    case ODataReaderState.ResourceStart:
+                        ODataResource resource = (ODataResource)reader.Item;
+                        ODataNestedResourceValue resourceWrapper = null;
+                        if (resource != null)
+                        {
+                            resourceWrapper = new ODataNestedResourceValue(resource);
+                        }
+
+                        if (itemsStack.Count == 0)
+                        {
+                            topLevelItem = resourceWrapper;
+                        }
+                        else
+                        {
+                            object parentItem = itemsStack.Peek();
+                            ODataNestedResourceSetValue parentResourceSet = parentItem as ODataNestedResourceSetValue;
+                            if (parentResourceSet != null)
+                            {
+                                if (parentResourceSet.NestedResources == null)
+                                {
+                                    parentResourceSet.NestedResources = new List<ODataNestedResourceValue>();
+                                }
+
+                                parentResourceSet.NestedResources.Add(resourceWrapper);
+                            }
+                            else
+                            {
+                                ODataNestedItem parentNestedItem = parentItem as ODataNestedItem;
+                                Debug.Assert(parentNestedItem != null);
+
+                                if (parentNestedItem.NestedValue == null)
+                                {
+                                    parentNestedItem.NestedValue = resourceWrapper;
+                                }
+                                else
+                                {
+                                    ODataNestedResourceSetValue nestedResourceSet = parentNestedItem.NestedValue as ODataNestedResourceSetValue;
+                                    if (nestedResourceSet != null)
+                                    {
+                                        if (nestedResourceSet.NestedResources == null)
+                                        {
+                                            nestedResourceSet.NestedResources = new List<ODataNestedResourceValue>();
+                                        }
+
+                                        nestedResourceSet.NestedResources.Add(resourceWrapper);
+                                    }
+                                    else
+                                    {
+                                        throw new Exception("Wrong");
+                                    }
+                                }
+                            }
+                        }
+
+                        itemsStack.Push(resourceWrapper);
+                        break;
+
+                    case ODataReaderState.ResourceEnd:
+                        itemsStack.Pop();
+                        break;
+
+                    case ODataReaderState.NestedResourceInfoStart:
+                        ODataNestedResourceInfo nestedResourceInfo = (ODataNestedResourceInfo)reader.Item;
+
+                        ODataNestedItem nestedResourceInfoWrapper = new ODataNestedItem(nestedResourceInfo);
+
+                        ODataNestedResourceValue parentResource = itemsStack.Peek() as ODataNestedResourceValue;
+                        if (parentResource != null)
+                        {
+                            if (parentResource.NestedItems == null)
+                            {
+                                parentResource.NestedItems = new List<ODataNestedItem>();
+                            }
+
+                            parentResource.NestedItems.Add(nestedResourceInfoWrapper);
+                        }
+
+                        itemsStack.Push(nestedResourceInfoWrapper);
+                        break;
+
+                    case ODataReaderState.NestedResourceInfoEnd:
+                        itemsStack.Pop();
+                        break;
+
+                    case ODataReaderState.ResourceSetStart:
+                        ODataResourceSet resourceSet = (ODataResourceSet)reader.Item;
+
+                        ODataNestedResourceSetValue resourceSetWrapper = new ODataNestedResourceSetValue(resourceSet);
+
+                        if (itemsStack.Count > 0)
+                        {
+                            ODataNestedItem parentNestedResourceInfo = itemsStack.Peek() as ODataNestedItem;
+                            if (parentNestedResourceInfo != null)
+                            {
+                                parentNestedResourceInfo.NestedValue = resourceSetWrapper;
+                            }
+                        }
+                        else
+                        {
+                            topLevelItem = resourceSetWrapper;
+                        }
+
+                        itemsStack.Push(resourceSetWrapper);
+                        break;
+
+                    case ODataReaderState.ResourceSetEnd:
+                        itemsStack.Pop();
+                        break;
+
+                    case ODataReaderState.EntityReferenceLink:
+                    default:
+                        break;
+                }
+            }
+
+            return topLevelItem;
         }
     }
 }

@@ -10,6 +10,7 @@ using FluentAssertions;
 using Microsoft.OData.Tests.UriParser;
 using Microsoft.OData.Edm;
 using Xunit;
+using System.Linq;
 
 namespace Microsoft.OData.Tests.Query
 {
@@ -247,6 +248,220 @@ namespace Microsoft.OData.Tests.Query
 
             TimeOfDay timeValue2 = (TimeOfDay)ODataUriUtils.ConvertFromUriLiteral("12:13:14.015", ODataVersion.V4);
             timeValue2.Should().Be(new TimeOfDay(12, 13, 14, 15));
+        }
+
+        [Fact]
+        public void TestResourceConvertFromUriLiteral()
+        {
+            EdmModel model = new EdmModel();
+            var complex = new EdmComplexType("NS", "Address");
+            complex.AddStructuralProperty("Street", EdmPrimitiveTypeKind.String);
+            complex.AddStructuralProperty("City", EdmPrimitiveTypeKind.String);
+            model.AddElement(complex);
+            var complexRef = new EdmComplexTypeReference(complex, false);
+            string literal = @"{""@odata.type"":""#NS.Address"",""Street"":""Ave156"",""City"":""City11""}";
+
+            var value = ODataUriUtils.ConvertFromUriLiteral(literal, ODataVersion.V4, model, complexRef);
+            var resource = Assert.IsType<ODataNestedResourceValue>(value);
+            Assert.NotNull(resource.Resource);
+            Assert.Equal(2, resource.Resource.Properties.Count());
+            ODataProperty property = resource.Resource.Properties.First();
+            Assert.Equal("Street", property.Name);
+            Assert.Equal("Ave156", property.Value);
+
+            property = resource.Resource.Properties.Last();
+            Assert.Equal("City", property.Name);
+            Assert.Equal("City11", property.Value);
+        }
+
+        [Fact]
+        public void TestResourceSetConvertFromUriLiteral()
+        {
+            EdmModel model = new EdmModel();
+            var complex = new EdmComplexType("NS", "Address");
+            complex.AddStructuralProperty("Street", EdmPrimitiveTypeKind.String);
+            complex.AddStructuralProperty("City", EdmPrimitiveTypeKind.String);
+            complex.AddStructuralProperty("Location", new EdmComplexTypeReference(complex, true));
+            model.AddElement(complex);
+            var complexRef = new EdmComplexTypeReference(complex, false);
+            string literal = @"[{""Street"":""Ave156"",""City"":""City22""},{""Street"":""Ave156"",""City"":""Redmond"",""Location"":{""Street"":""Ave228"",""City"":""Sammamish""}}]";
+
+            var collectionRef = new EdmCollectionTypeReference(new EdmCollectionType(complexRef));
+            var value = ODataUriUtils.ConvertFromUriLiteral(literal, ODataVersion.V4, model, collectionRef);
+
+            var setValue = Assert.IsType<ODataNestedResourceSetValue>(value);
+            Assert.NotNull(setValue.ResourceSet);
+
+            Assert.Equal(2, setValue.NestedResources.Count());
+            ODataNestedResourceValue resourceValue = setValue.NestedResources[0];
+
+            Assert.Equal(2, resourceValue.Resource.Properties.Count());
+            ODataProperty property = resourceValue.Resource.Properties.First();
+            Assert.Equal("Street", property.Name);
+            Assert.Equal("Ave156", property.Value);
+
+            property = resourceValue.Resource.Properties.Last();
+            Assert.Equal("City", property.Name);
+            Assert.Equal("City22", property.Value);
+
+            // Item2
+            resourceValue = setValue.NestedResources[1];
+
+            // Street, City
+            Assert.Equal(2, resourceValue.Resource.Properties.Count());
+            property = resourceValue.Resource.Properties.First(c => c.Name == "Street");
+            Assert.Equal("Ave156", property.Value);
+
+            property = resourceValue.Resource.Properties.First(c => c.Name == "City");
+            Assert.Equal("Redmond", property.Value);
+
+            Assert.NotNull(resourceValue.NestedItems);
+            var nestedItem = Assert.Single(resourceValue.NestedItems);
+            Assert.NotNull(nestedItem.NestedResourceInfo);
+            Assert.Equal("Location", nestedItem.NestedResourceInfo.Name);
+            Assert.NotNull(nestedItem.NestedValue);
+            var nestedResource = Assert.IsType<ODataNestedResourceValue>(nestedItem.NestedValue);
+
+            Assert.Equal(2, nestedResource.Resource.Properties.Count());
+            property = nestedResource.Resource.Properties.First(c => c.Name == "Street");
+            Assert.Equal("Ave228", property.Value);
+
+            property = nestedResource.Resource.Properties.First(c => c.Name == "City");
+            Assert.Equal("Sammamish", property.Value);
+        }
+
+        [Fact]
+        public void TestResourceConvertToUriLiteral()
+        {
+            EdmModel model = new EdmModel();
+            var complex = new EdmComplexType("NS", "Address");
+            complex.AddStructuralProperty("Street", EdmPrimitiveTypeKind.String);
+            complex.AddStructuralProperty("City", EdmPrimitiveTypeKind.String);
+            model.AddElement(complex);
+
+            ODataResource resource = new ODataResource
+            {
+                TypeName = "NS.Address"
+            };
+
+            resource.Properties = new[]
+            {
+                new ODataProperty { Name = "Street", Value = "Ave156" },
+                new ODataProperty { Name = "City", Value = "Shanghai" }
+            };
+
+            var literal = ODataUriUtils.ConvertToUriLiteral(resource, ODataVersion.V4, model);
+            Assert.Equal(@"{""@odata.type"":""#NS.Address"",""Street"":""Ave156"",""City"":""Shanghai""}", literal);
+        }
+
+        [Fact]
+        public void TestResourceWithNestedResourceConvertFromUriLiteral()
+        {
+            EdmModel model = new EdmModel();
+            var complex = new EdmComplexType("NS", "Address");
+            complex.AddStructuralProperty("Street", EdmPrimitiveTypeKind.String);
+            complex.AddStructuralProperty("City", EdmPrimitiveTypeKind.String);
+            complex.AddStructuralProperty("Location", new EdmComplexTypeReference(complex, true));
+            model.AddElement(complex);
+
+            ODataResource resource = new ODataResource
+            {
+                TypeName = "NS.Address",
+                Properties = new[]
+                {
+                    new ODataProperty { Name = "Street", Value = "Ave156" },
+                    new ODataProperty { Name = "City", Value = "Redmond" }
+                }
+            };
+
+            ODataNestedResourceInfo nestedResourceInfo = new ODataNestedResourceInfo
+            {
+                Name = "Location",
+                IsCollection = false
+            };
+
+            ODataResource nestedResource = new ODataResource
+            {
+                TypeName = "NS.Address",
+                Properties = new[]
+                {
+                    new ODataProperty { Name = "Street", Value = "Ave228" },
+                    new ODataProperty { Name = "City", Value = "Samma" }
+                }
+            };
+
+            ODataNestedResourceValue value = new ODataNestedResourceValue(resource)
+            {
+                NestedItems = new[] {
+                    new ODataNestedItem(nestedResourceInfo)
+                    {
+                        NestedValue = new ODataNestedResourceValue(nestedResource)
+                    }
+                }
+            };
+
+            var literal = ODataUriUtils.ConvertToUriLiteral(value, ODataVersion.V4, model);
+            Assert.Equal(@"{""@odata.type"":""#NS.Address"",""Street"":""Ave156"",""City"":""Redmond"",""Location"":{""Street"":""Ave228"",""City"":""Samma""}}", literal);
+        }
+
+        [Fact]
+        public void TestResourceSetConvertToUriLiteral()
+        {
+            EdmModel model = new EdmModel();
+            var complex = new EdmComplexType("NS", "Address");
+            complex.AddStructuralProperty("Street", EdmPrimitiveTypeKind.String);
+            complex.AddStructuralProperty("City", EdmPrimitiveTypeKind.String);
+            complex.AddStructuralProperty("Location", new EdmComplexTypeReference(complex, true));
+            model.AddElement(complex);
+
+            ODataResource resource = new ODataResource
+            {
+                TypeName = "NS.Address",
+                Properties = new[]
+                {
+                    new ODataProperty { Name = "Street", Value = "Ave156" },
+                    new ODataProperty { Name = "City", Value = "Redmond" }
+                }
+            };
+
+            ODataNestedResourceInfo nestedResourceInfo = new ODataNestedResourceInfo
+            {
+                Name = "Location",
+                IsCollection = false
+            };
+
+            ODataResource nestedResource = new ODataResource
+            {
+                TypeName = "NS.Address",
+                Properties = new[]
+                {
+                    new ODataProperty { Name = "Street", Value = "Ave228" },
+                    new ODataProperty { Name = "City", Value = "Samma" }
+                }
+            };
+
+            ODataNestedResourceValue value = new ODataNestedResourceValue(resource)
+            {
+                NestedItems = new[] {
+                    new ODataNestedItem(nestedResourceInfo)
+                    {
+                        NestedValue = new ODataNestedResourceValue(nestedResource)
+                    }
+                }
+            };
+
+            ODataResourceSet set = new ODataResourceSet()
+            {
+                TypeName = "Collection(NS.Address)"
+            };
+            ODataNestedResourceSetValue setValue = new ODataNestedResourceSetValue(set)
+            {
+                NestedResources = new[] { new ODataNestedResourceValue(resource), value }
+            };
+
+            var literal = ODataUriUtils.ConvertToUriLiteral(setValue, ODataVersion.V4, model);
+            Assert.Equal(@"[{""Street"":""Ave156"",""City"":""Redmond""},{""Street"":""Ave156"",""City"":""Redmond"",""Location"":{""Street"":""Ave228"",""City"":""Samma""}}]",
+                literal);
         }
 
         [Fact]

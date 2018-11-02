@@ -712,6 +712,18 @@
     <Compile Include="$(ODataCrossTargettingSourcePath)\ODataNestedResourceInfo.cs">
       <Link>Microsoft\OData\Core\ODataNestedResourceInfo.cs</Link>
     </Compile>
+    <Compile Include="$(ODataCrossTargettingSourcePath)\ODataNestedItem.cs">
+      <Link>Microsoft\OData\Core\ODataNestedItem.cs</Link>
+    </Compile>
+    <Compile Include="$(ODataCrossTargettingSourcePath)\ODataNestedResourceSetValue.cs">
+      <Link>Microsoft\OData\Core\ODataNestedResourceSetValue.cs</Link>
+    </Compile>
+    <Compile Include="$(ODataCrossTargettingSourcePath)\ODataNestedResourceValue.cs">
+      <Link>Microsoft\OData\Core\ODataNestedResourceValue.cs</Link>
+    </Compile>
+    <Compile Include="$(ODataCrossTargettingSourcePath)\ODataNestedValue.cs">
+      <Link>Microsoft\OData\Core\ODataNestedValue.cs</Link>
+    </Compile>
     <Compile Include="$(ODataCrossTargettingSourcePath)\ODataNullValue.cs">
       <Link>Microsoft\OData\Core\ODataNullValue.cs</Link>
     </Compile>

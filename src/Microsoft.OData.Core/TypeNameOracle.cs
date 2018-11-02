@@ -131,6 +131,81 @@ namespace Microsoft.OData
             return null;
         }
 
+
+        /// <summary>
+        /// Resolve a type name against the provided <paramref name="model"/>. If not payload type name is specified,
+        /// derive the type from the model type (if available).
+        /// </summary>
+        /// <param name="model">The model to use.</param>
+        /// <param name="typeReferenceFromMetadata">The type inferred from the model or null if the model is not a user model.</param>
+        /// <param name="complexValue">The value in question to resolve the type for.</param>
+        /// <param name="isOpenPropertyType">True if the type name belongs to an open property.</param>
+        /// <param name="writerValidator">The writer validator to use for validation.</param>
+        /// <returns>A type for the <paramref name="resourceValue"/> or null if no type name is specified and no metadata is available.</returns>
+        internal static IEdmTypeReference ResolveAndValidateTypeForResourceValue(IEdmModel model, IEdmTypeReference typeReferenceFromMetadata, ODataNestedResourceValue resourceValue, bool isOpenPropertyType, IWriterValidator writerValidator)
+        {
+            Debug.Assert(model != null, "model != null");
+
+            var typeName = resourceValue.Resource.TypeName;
+
+            ValidateIfTypeNameMissing(typeName, model, isOpenPropertyType);
+
+            IEdmType typeFromValue = typeName == null ? null : ResolveAndValidateTypeName(model, typeName, EdmTypeKind.Entity, true, writerValidator);
+            if (typeReferenceFromMetadata != null)
+            {
+                writerValidator.ValidateTypeKind(EdmTypeKind.Entity, typeReferenceFromMetadata.TypeKind(), true, typeFromValue);
+            }
+
+            IEdmTypeReference typeReferenceFromValue = ResolveTypeFromMetadataAndValue(typeReferenceFromMetadata, typeFromValue == null ? null : typeFromValue.ToTypeReference(), writerValidator);
+            return typeReferenceFromValue;
+        }
+
+        internal static IEdmTypeReference ResolveAndValidateTypeForResourceSetValue(IEdmModel model, IEdmTypeReference typeReferenceFromMetadata, ODataNestedResourceSetValue resourceSetValue, bool isOpenPropertyType, IWriterValidator writerValidator)
+        {
+            Debug.Assert(model != null, "model != null");
+
+            var typeName = resourceSetValue.ResourceSet.TypeName;
+
+            ValidateIfTypeNameMissing(typeName, model, isOpenPropertyType);
+
+            IEdmType typeFromValue = typeName == null ? null : ResolveAndValidateTypeName(model, typeName, EdmTypeKind.Collection, true, writerValidator);
+            if (typeReferenceFromMetadata != null)
+            {
+                writerValidator.ValidateTypeKind(EdmTypeKind.Collection, typeReferenceFromMetadata.TypeKind(), true, typeFromValue);
+            }
+
+            IEdmTypeReference typeReferenceFromValue = ResolveTypeFromMetadataAndValue(typeReferenceFromMetadata, typeFromValue == null ? null : typeFromValue.ToTypeReference(), writerValidator);
+            return typeReferenceFromValue;
+        }
+/*
+        /// <summary>
+        /// Resolve a type name against the provided <paramref name="model"/>. If not payload type name is specified,
+        /// derive the type from the model type (if available).
+        /// </summary>
+        /// <param name="model">The model to use.</param>
+        /// <param name="typeReferenceFromMetadata">The type inferred from the model or null if the model is not a user model.</param>
+        /// <param name="complexValue">The value in question to resolve the type for.</param>
+        /// <param name="isOpenPropertyType">True if the type name belongs to an open property.</param>
+        /// <param name="writerValidator">The writer validator to use for validation.</param>
+        /// <returns>A type for the <paramref name="entityValue"/> or null if no type name is specified and no metadata is available.</returns>
+        internal static IEdmTypeReference ResolveAndValidateTypeForEntityValue(IEdmModel model, IEdmTypeReference typeReferenceFromMetadata, ODataEntityValue entityValue, bool isOpenPropertyType, IWriterValidator writerValidator)
+        {
+            Debug.Assert(model != null, "model != null");
+
+            var typeName = entityValue.TypeName;
+
+            ValidateIfTypeNameMissing(typeName, model, isOpenPropertyType);
+
+            IEdmType typeFromValue = typeName == null ? null : ResolveAndValidateTypeName(model, typeName, EdmTypeKind.Entity, true, writerValidator);
+            if (typeReferenceFromMetadata != null)
+            {
+                writerValidator.ValidateTypeKind(EdmTypeKind.Entity, typeReferenceFromMetadata.TypeKind(), true, typeFromValue);
+            }
+
+            IEdmTypeReference typeReferenceFromValue = ResolveTypeFromMetadataAndValue(typeReferenceFromMetadata, typeFromValue == null ? null : typeFromValue.ToTypeReference(), writerValidator);
+            return typeReferenceFromValue;
+        }*/
+
         /// <summary>
         /// Resolve a type name against the provided <paramref name="model"/>. If not payload type name is specified,
         /// derive the type from the model type (if available).
@@ -192,7 +267,8 @@ namespace Microsoft.OData
         /// <summary>
         /// Gets the type name from the given <paramref name="value"/>.
         /// </summary>
-        /// <param name="value">The value to get the type name from. This can be an ODataPrimitiveValue, an ODataCollectionValue or a Clr primitive object.</param>
+        /// <param name="value">The value to get the type name from. This can be an ODataPrimitiveValue, an ODataEnumValue,
+        /// an ODataStructuredValue (ODataComplexValue, an ODataEntityValue), an ODataCollectionValue or a Clr primitive object.</param>
         /// <returns>The type name for the given <paramref name="value"/>.</returns>
         protected static string GetTypeNameFromValue(object value)
         {
@@ -215,6 +291,18 @@ namespace Microsoft.OData
             if (enumValue != null)
             {
                 return enumValue.TypeName;
+            }
+
+            ODataNestedResourceValue resourceValue = value as ODataNestedResourceValue;
+            if (resourceValue != null)
+            {
+                return resourceValue.Resource.TypeName;
+            }
+
+            ODataNestedResourceSetValue resourceSetValue = value as ODataNestedResourceSetValue;
+            if (resourceSetValue != null)
+            {
+                return resourceSetValue.ResourceSet.TypeName;
             }
 
             ODataCollectionValue collectionValue = value as ODataCollectionValue;
