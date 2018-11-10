@@ -141,7 +141,18 @@ namespace Microsoft.OData.JsonLight
 
                                     case EdmTypeKind.Complex:
                                     case EdmTypeKind.Entity:
-                                        parameterValue = null;
+                                        IEdmStructuredTypeReference structruedTypeReference = parameterTypeReference.AsStructured();
+                                        // TODO: need a configuration.
+                                        parameterValue = this.ReadNonEntityValue(
+                                            /*payloadTypeName*/ null,
+                                            structruedTypeReference,
+                                            /*propertyAndAnnotationCollector*/ null,
+                                            /*collectionValidator*/ null,
+                                            /*validateNullValue*/ true,
+                                            /*isTopLevelPropertyValue*/ false,
+                                            /*insideComplexValue*/ false,
+                                            parameterName);
+
                                         state = ODataParameterReaderState.Resource;
                                         break;
 

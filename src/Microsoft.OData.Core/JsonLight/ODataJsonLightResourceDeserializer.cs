@@ -402,7 +402,21 @@ namespace Microsoft.OData.JsonLight
                             case PropertyParsingResult.ODataInstanceAnnotation:
                             case PropertyParsingResult.CustomInstanceAnnotation:
                                 object value = ReadODataOrCustomInstanceAnnotationValue(resourceState, propertyParsingResult, propertyName);
-                                this.ApplyEntryInstanceAnnotation(resourceState, propertyName, value);
+                                /*
+                                ODataNestedResourceValue resourceValue = value as ODataNestedResourceValue;
+                                ODataNestedResourceSetValue resourceSetValue = value as ODataNestedResourceSetValue;
+                                if (resourceValue != null)
+                                {
+                                    readerNestedResourceInfo = ReadInstanceAnnotation(resourceState, propertyName, false, resourceValue, resourceState.ResourceType);
+                                }
+                                else if (resourceSetValue != null)
+                                {
+                                    readerNestedResourceInfo = ReadInstanceAnnotation(resourceState, propertyName, false, resourceSetValue, resourceState.ResourceType);
+                                }
+                                else
+                                {*/
+                                    this.ApplyEntryInstanceAnnotation(resourceState, propertyName, value);
+                               // }
                                 break;
 
                             case PropertyParsingResult.PropertyWithoutValue:
@@ -1159,7 +1173,56 @@ namespace Microsoft.OData.JsonLight
             mediaResource.SetMetadataBuilder(builder, /*propertyName*/ null);
             resource.MediaResource = mediaResource;
         }
+#if false
+        private static ODataJsonLightReaderNestedResourceInfo ReadInstanceAnnotation(IODataJsonLightReaderResourceState resourceState, string instanceName, bool isDeltaResourceSet, ODataNestedValue value,
+            IEdmStructuredType structuredType)
+        {
+            ODataJsonLightReaderNestedResourceInfo readerNestedResourceInfo = null;
+            bool isCollection = value is ODataNestedResourceSetValue;
+            if (isCollection)
+            {
+                readerNestedResourceInfo = ReadNestedResourceSetNestedResourceInfo(resourceState, structuredType, instanceName);
+            }
+            else
+            {
+                readerNestedResourceInfo = ReadNestedResourceNestedResourceInfo(resourceState, structuredType, instanceName);
+            }
 
+            resourceState.PropertyAndAnnotationCollector.ValidatePropertyUniquenessOnNestedResourceInfoStart(readerNestedResourceInfo.NestedResourceInfo);
+
+            return readerNestedResourceInfo;
+        }
+
+        private static ODataJsonLightReaderNestedResourceInfo ReadNestedResourceSetNestedResourceInfo(IODataJsonLightReaderResourceState resourceState, IEdmStructuredType nestedResourceType, string instanceName)
+        {
+            Debug.Assert(resourceState != null, "resourceState != null");
+
+            ODataNestedResourceInfo nestedResourceInfo = new ODataNestedResourceInfo()
+            {
+                Name = instanceName,
+                IsCollection = true,
+                IsComplex = true
+            };
+
+            ODataResourceSet expandedResourceSet = new ODataResourceSet();
+
+            return ODataJsonLightReaderNestedResourceInfo.CreateResourceSetReaderNestedResourceInfo(nestedResourceInfo, null, nestedResourceType, expandedResourceSet);
+        }
+
+        private static ODataJsonLightReaderNestedResourceInfo ReadNestedResourceNestedResourceInfo(IODataJsonLightReaderResourceState resourceState, IEdmStructuredType nestedResourceType, string instanceName)
+        {
+            Debug.Assert(resourceState != null, "resourceState != null");
+ 
+            ODataNestedResourceInfo nestedResourceInfo = new ODataNestedResourceInfo()
+            {
+                Name = instanceName,
+                IsCollection = false,
+                IsComplex = true
+            };
+
+            return ODataJsonLightReaderNestedResourceInfo.CreateResourceReaderNestedResourceInfo(nestedResourceInfo, null, nestedResourceType);
+        }
+#endif
         /// <summary>
         /// Reads resource property (which is neither instance nor property annotation) which has a value.
         /// </summary>

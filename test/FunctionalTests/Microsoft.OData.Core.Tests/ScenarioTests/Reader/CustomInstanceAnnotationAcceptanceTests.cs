@@ -258,17 +258,25 @@ namespace Microsoft.OData.Tests.ScenarioTests.Reader
                 var odataWriter = messageWriter.CreateODataResourceSetWriter(EntitySet, EntityType);
 
                 // Add instance annotations to the feed.
-                var feedToWrite = new ODataResourceSet { Id = new Uri("urn:feedId") };
+                var feedToWrite = new ODataResourceSet { Id = new Uri("urn:feedId"), TypeName = "Collection(TestNamespace.TestEntityType)" };
                 feedToWrite.InstanceAnnotations.Add(new ODataInstanceAnnotation("Custom.Int32Annotation", PrimitiveValue1));
                 feedToWrite.InstanceAnnotations.Add(new ODataInstanceAnnotation("Custom.GuidAnnotation", PrimitiveValue2));
                 feedToWrite.InstanceAnnotations.Add(new ODataInstanceAnnotation("ShouldSkip.Int32Annotation", PrimitiveValue1));
                 feedToWrite.InstanceAnnotations.Add(new ODataInstanceAnnotation("ShouldSkip.GuidAnnotation", PrimitiveValue2));
 
+            //    ODataNestedResourceSetValue resourceSetValue = new ODataNestedResourceSetValue(feedToWrite);
+           //     resourceSetValue.InstanceAnnotations.Add(new ODataInstanceAnnotation("Custom.FeedAnnotation", resourceSetValue));
+
                 // Writes instance annotations at the beginning of the feed
                 odataWriter.WriteStart(feedToWrite);
 
+
                 // Add instance annotations to the entry.
-                var entryToWrite = new ODataResource { Properties = new[] { new ODataProperty { Name = "ID", Value = 1 } } };
+                ODataProperty property = new ODataProperty { Name = "ID", Value = 1 };
+                property.InstanceAnnotations.Add(new ODataInstanceAnnotation("Custom.Primitive", new ODataPrimitiveValue(2)));
+                var entryToWrite = new ODataResource { Properties = new[] { property } };
+
+                entryToWrite.InstanceAnnotations.Add(new ODataInstanceAnnotation("Custom.PrimitiveCollectionAnnotation11", PrimitiveCollectionValue));
 
                 // Writes instance annotations at the beginning of the entry
                 odataWriter.WriteStart(entryToWrite);
@@ -276,6 +284,10 @@ namespace Microsoft.OData.Tests.ScenarioTests.Reader
                 // Add more instance annotations to the entry.
                 entryToWrite.InstanceAnnotations.Add(new ODataInstanceAnnotation("Custom.PrimitiveCollectionAnnotation", PrimitiveCollectionValue));
                 entryToWrite.InstanceAnnotations.Add(new ODataInstanceAnnotation("ShouldSkip.PrimitiveCollectionAnnotation", PrimitiveCollectionValue));
+
+                ODataNestedResourceValue resourceValue = new ODataNestedResourceValue(entryToWrite);
+                resourceValue.InstanceAnnotations.Add(new ODataInstanceAnnotation("Custom.PrimitiveCollectionAnnotation", PrimitiveCollectionValue));
+                entryToWrite.InstanceAnnotations.Add(new ODataInstanceAnnotation("Custom.MyResourceAnnotation", resourceValue));
 
                 // The writer remembers which instance annotations in the collection has been written
                 // and only write out the unwritten ones since WriteStart() to the end of the entry.

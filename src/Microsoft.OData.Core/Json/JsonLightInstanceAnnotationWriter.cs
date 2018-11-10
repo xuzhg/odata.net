@@ -185,6 +185,30 @@ namespace Microsoft.OData
                 return;
             }
 
+            ODataNestedResourceSetValue nestedResourceSetValue = value as ODataNestedResourceSetValue;
+            if (nestedResourceSetValue != null)
+            {
+                IEdmTypeReference typeFromSetValue = (IEdmCollectionTypeReference)TypeNameOracle.ResolveAndValidateTypeForResourceSetValue(
+                    this.valueSerializer.Model, expectedType, nestedResourceSetValue, treatLikeOpenProperty, this.writerValidator);
+                string collectionTypeNameToWrite = this.typeNameOracle.GetValueTypeNameForWriting(nestedResourceSetValue, expectedType, typeFromSetValue, treatLikeOpenProperty);
+                if (collectionTypeNameToWrite != null)
+                {
+                    this.odataAnnotationWriter.WriteODataTypePropertyAnnotation(name, collectionTypeNameToWrite);
+                }
+
+                this.WriteInstanceAnnotationName(propertyName, name);
+                this.valueSerializer.WriteNestedResourceSetValue(nestedResourceSetValue, null, treatLikeOpenProperty);
+                return;
+            }
+
+            ODataNestedResourceValue nestedResourceValue = value as ODataNestedResourceValue;
+            if (nestedResourceValue != null)
+            {
+                this.WriteInstanceAnnotationName(propertyName, name);
+                this.valueSerializer.WriteNestedResourceValue(nestedResourceValue, null, treatLikeOpenProperty);
+                return;
+            }
+
             ODataUntypedValue untypedValue = value as ODataUntypedValue;
             if (untypedValue != null)
             {

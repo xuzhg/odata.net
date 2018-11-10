@@ -471,7 +471,7 @@ namespace Microsoft.OData {
         internal const string ODataJsonLightDeserializer_AnnotationTargetingInstanceAnnotationWithoutValue = "ODataJsonLightDeserializer_AnnotationTargetingInstanceAnnotationWithoutValue";
         internal const string ODataJsonLightWriter_EntityReferenceLinkAfterResourceSetInRequest = "ODataJsonLightWriter_EntityReferenceLinkAfterResourceSetInRequest";
         internal const string ODataJsonLightWriter_InstanceAnnotationNotSupportedOnExpandedResourceSet = "ODataJsonLightWriter_InstanceAnnotationNotSupportedOnExpandedResourceSet";
-        internal const string ODataJsonLightPropertyAndValueSerializer_NoExpectedTypeOrTypeNameSpecifiedForComplexValueRequest = "ODataJsonLightPropertyAndValueSerializer_NoExpectedTypeOrTypeNameSpecifiedForComplexValueRequest";
+        internal const string ODataJsonLightPropertyAndValueSerializer_NoExpectedTypeOrTypeNameSpecifiedForNestedResourceValueRequest = "ODataJsonLightPropertyAndValueSerializer_NoExpectedTypeOrTypeNameSpecifiedForNestedResourceValueRequest";
         internal const string ODataJsonLightPropertyAndValueSerializer_NoExpectedTypeOrTypeNameSpecifiedForCollectionValueInRequest = "ODataJsonLightPropertyAndValueSerializer_NoExpectedTypeOrTypeNameSpecifiedForCollectionValueInRequest";
         internal const string ODataResourceTypeContext_MetadataOrSerializationInfoMissing = "ODataResourceTypeContext_MetadataOrSerializationInfoMissing";
         internal const string ODataResourceTypeContext_ODataResourceTypeNameMissing = "ODataResourceTypeContext_ODataResourceTypeNameMissing";
@@ -491,9 +491,9 @@ namespace Microsoft.OData {
         internal const string ODataJsonLightPropertyAndValueDeserializer_InvalidTopLevelPropertyName = "ODataJsonLightPropertyAndValueDeserializer_InvalidTopLevelPropertyName";
         internal const string ODataJsonLightPropertyAndValueDeserializer_InvalidTypeName = "ODataJsonLightPropertyAndValueDeserializer_InvalidTypeName";
         internal const string ODataJsonLightPropertyAndValueDeserializer_TopLevelPropertyAnnotationWithoutProperty = "ODataJsonLightPropertyAndValueDeserializer_TopLevelPropertyAnnotationWithoutProperty";
-        internal const string ODataJsonLightPropertyAndValueDeserializer_ComplexValuePropertyAnnotationWithoutProperty = "ODataJsonLightPropertyAndValueDeserializer_ComplexValuePropertyAnnotationWithoutProperty";
+        internal const string ODataJsonLightPropertyAndValueDeserializer_ResourceValuePropertyAnnotationWithoutProperty = "ODataJsonLightPropertyAndValueDeserializer_ResourceValuePropertyAnnotationWithoutProperty";
         internal const string ODataJsonLightPropertyAndValueDeserializer_ComplexValueWithPropertyTypeAnnotation = "ODataJsonLightPropertyAndValueDeserializer_ComplexValueWithPropertyTypeAnnotation";
-        internal const string ODataJsonLightPropertyAndValueDeserializer_ComplexTypeAnnotationNotFirst = "ODataJsonLightPropertyAndValueDeserializer_ComplexTypeAnnotationNotFirst";
+        internal const string ODataJsonLightPropertyAndValueDeserializer_ODataTypeAnnotationNotFirst = "ODataJsonLightPropertyAndValueDeserializer_ODataTypeAnnotationNotFirst";
         internal const string ODataJsonLightPropertyAndValueDeserializer_UnexpectedDataPropertyAnnotation = "ODataJsonLightPropertyAndValueDeserializer_UnexpectedDataPropertyAnnotation";
         internal const string ODataJsonLightPropertyAndValueDeserializer_TypePropertyAfterValueProperty = "ODataJsonLightPropertyAndValueDeserializer_TypePropertyAfterValueProperty";
         internal const string ODataJsonLightPropertyAndValueDeserializer_ODataTypeAnnotationInPrimitiveValue = "ODataJsonLightPropertyAndValueDeserializer_ODataTypeAnnotationInPrimitiveValue";
@@ -773,8 +773,8 @@ namespace Microsoft.OData {
         internal const string RequestUriProcessor_InvalidValueForKeySegment = "RequestUriProcessor_InvalidValueForKeySegment";
         internal const string RequestUriProcessor_CannotApplyFilterOnSingleEntities = "RequestUriProcessor_CannotApplyFilterOnSingleEntities";
         internal const string RequestUriProcessor_CannotApplyEachOnSingleEntities = "RequestUriProcessor_CannotApplyEachOnSingleEntities";
-        internal const string RequestUriProcessor_NoNavigationSourceFound = "RequestUriProcessor_NoNavigationSourceFound";
         internal const string RequestUriProcessor_FilterPathSegmentSyntaxError = "RequestUriProcessor_FilterPathSegmentSyntaxError";
+        internal const string RequestUriProcessor_NoNavigationSourceFound = "RequestUriProcessor_NoNavigationSourceFound";
         internal const string RequestUriProcessor_OnlySingleOperationCanFollowEachPathSegment = "RequestUriProcessor_OnlySingleOperationCanFollowEachPathSegment";
         internal const string RequestUriProcessor_EmptySegmentInRequestUrl = "RequestUriProcessor_EmptySegmentInRequestUrl";
         internal const string RequestUriProcessor_SyntaxError = "RequestUriProcessor_SyntaxError";
@@ -845,6 +845,7 @@ namespace Microsoft.OData {
         internal const string JsonReaderExtensions_CannotReadValueAsDouble = "JsonReaderExtensions_CannotReadValueAsDouble";
         internal const string JsonReaderExtensions_UnexpectedInstanceAnnotationName = "JsonReaderExtensions_UnexpectedInstanceAnnotationName";
         internal const string ServiceProviderExtensions_NoServiceRegistered = "ServiceProviderExtensions_NoServiceRegistered";
+        internal const string NestedValueNotAllowedAsPropertyValue = "NestedValueNotAllowedAsPropertyValue";
 
         static TextRes loader = null;
         ResourceManager resources;

@@ -51,7 +51,7 @@ namespace Microsoft.OData
 
             if (model == null)
             {
-                model = Microsoft.OData.Edm.EdmCoreModel.Instance;
+                model = EdmCoreModel.Instance;
             }
 
             // Let ExpressionLexer try to get a primitive
@@ -60,10 +60,19 @@ namespace Microsoft.OData
             ExpressionToken token;
 
             lexer.TryPeekNextToken(out token, out error);
-
-            if (token.Kind == ExpressionTokenKind.BracketedExpression)
+            /*
+            if (typeReference != null && (typeReference.IsStructured() || typeReference.IsStructuredCollection()))
             {
-                return ODataUriConversionUtils.ConvertFromCollectionValue(value, model, typeReference);
+                // "[" or "{"
+                if (token.Kind == ExpressionTokenKind.BracketedExpression || token.Kind == ExpressionTokenKind.BracedExpression)
+                {
+                    return ODataUriConversionUtils.ConvertFromNestedValueLiteral(value, model, version, typeReference);
+                }
+            }*/
+
+            if (token.Kind == ExpressionTokenKind.BracketedExpression || token.Kind == ExpressionTokenKind.BracedExpression)
+            {
+                return ODataUriConversionUtils.ConvertFromResourceOrCollectionValue(value, model, typeReference);
             }
 
             QueryNode enumConstNode;
@@ -115,7 +124,7 @@ namespace Microsoft.OData
 
             if (model == null)
             {
-                model = Microsoft.OData.Edm.EdmCoreModel.Instance;
+                model = EdmCoreModel.Instance;
             }
 
             ODataNullValue nullValue = value as ODataNullValue;
@@ -134,6 +143,20 @@ namespace Microsoft.OData
             if (enumValue != null)
             {
                 return ODataUriConversionUtils.ConvertToUriEnumLiteral(enumValue, version);
+            }
+
+            // nested resource value
+            ODataNestedResourceValue resourceValue = value as ODataNestedResourceValue;
+            if (resourceValue != null)
+            {
+                return ODataUriConversionUtils.ConvertToResourceLiteral(resourceValue, model, version);
+            }
+
+            // nested resource set value
+            ODataNestedResourceSetValue resourceSetValue = value as ODataNestedResourceSetValue;
+            if (resourceSetValue != null)
+            {
+                return ODataUriConversionUtils.ConvertToResourceSetLiteral(resourceSetValue, model, version);
             }
 
             ODataResourceBase resource = value as ODataResourceBase;

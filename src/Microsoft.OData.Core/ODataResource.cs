@@ -183,7 +183,12 @@ namespace Microsoft.OData
         public IEnumerable<ODataProperty> Properties
         {
             get { return this.MetadataBuilder.GetProperties(this.properties); }
-            set { this.properties = value; }
+            set
+            {
+                // TODO:SAM XU, It's not allowed a property with value as "ODataResourceValue" or a collection of "ODataResourceValue"
+
+                this.properties = value;
+            }
         }
 
         /// <summary>Gets or sets the type name of the resource.</summary>

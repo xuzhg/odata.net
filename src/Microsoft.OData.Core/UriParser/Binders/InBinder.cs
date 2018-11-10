@@ -94,7 +94,7 @@ namespace Microsoft.OData.UriParser
                     bracketLiteralText = replacedText.ToString();
                 }
 
-                object collection = ODataUriConversionUtils.ConvertFromCollectionValue(bracketLiteralText, model, expectedType);
+                object collection = ODataUriConversionUtils.ConvertFromResourceOrCollectionValue(bracketLiteralText, model, expectedType);
                 LiteralToken collectionLiteralToken = new LiteralToken(collection, originalLiteralText, expectedType);
                 operand = this.bindMethod(collectionLiteralToken) as CollectionConstantNode;
             }

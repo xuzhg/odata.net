@@ -76,6 +76,223 @@ namespace Microsoft.OData.JsonLight
         }
 
         /// <summary>
+        /// Property serializer.
+        /// </summary>
+        private ODataJsonLightPropertySerializer propertySerializer;
+
+        /// <summary>
+        /// Gets the property serializer.
+        /// </summary>
+        private ODataJsonLightPropertySerializer PropertySerializer
+        {
+            get
+            {
+                if (this.propertySerializer == null)
+                {
+                    this.propertySerializer = new ODataJsonLightPropertySerializer(this.JsonLightOutputContext);
+                }
+
+                return this.propertySerializer;
+            }
+        }
+
+        /// <summary>
+        /// Writes out the value of a complex property.
+        /// </summary>
+        /// <param name="complexValue">The complex value to write.</param>
+        /// <param name="metadataTypeReference">The metadata type for the complex value.</param>
+        /// <param name="isTopLevel">true when writing a top-level property; false for nested properties.</param>
+        /// <param name="isOpenPropertyType">true if the type name belongs to an open property.</param>
+        /// <param name="duplicatePropertyNamesChecker">The checker instance for duplicate property names.</param>
+        /// <remarks>The current recursion depth should be a value, measured by the number of complex and collection values between
+        /// this complex value and the top-level payload, not including this one.</remarks>
+        [SuppressMessage("Microsoft.Naming", "CA2204:LiteralsShouldBeSpelledCorrectly", Justification = "Names are correct. String can't be localized after string freeze.")]
+        public void WriteResourceValue(
+            ODataResourceValue resourceValue,
+            IEdmTypeReference metadataTypeReference,
+            bool isTopLevel,
+            bool isOpenPropertyType,
+            PropertyAndAnnotationCollector propertyAndAnnotationCollector)
+        {
+            Debug.Assert(resourceValue != null, "complexValue != null");
+
+            this.IncreaseRecursionDepth();
+
+            // Start the object scope which will represent the entire complex instance;
+            // for top-level complex properties we already wrote the object scope (and the context URI when needed).
+            if (!isTopLevel)
+            {
+                this.JsonWriter.StartObjectScope();
+            }
+
+            string typeName = resourceValue.TypeName;
+
+            if (isTopLevel)
+            {
+                Debug.Assert(metadataTypeReference == null, "Never expect a metadata type for top-level properties.");
+                if (typeName == null)
+                {
+                   // throw new ODataException(ODataErrorStrings.ODataJsonLightValueSerializer_MissingTypeNameOnComplex);
+                }
+            }
+            else
+            {
+                // In requests, we allow the property type reference to be null if the type name is specified in the OM
+                if (metadataTypeReference == null && !this.WritingResponse && typeName == null && this.Model.IsUserModel())
+                {
+                  //  throw new ODataException(ODataErrorStrings.ODataJsonLightPropertyAndValueSerializer_NoExpectedTypeOrTypeNameSpecifiedForComplexValueRequest);
+                }
+            }
+
+            // Resolve the type name to the type; if no type name is specified we will use the 
+            // type inferred from metadata.
+            IEdmComplexTypeReference complexValueTypeReference = (IEdmComplexTypeReference)TypeNameOracle.ResolveAndValidateTypeForResourceValue(this.Model, metadataTypeReference, resourceValue, isOpenPropertyType, this.WriterValidator);
+            Debug.Assert(
+                metadataTypeReference == null || complexValueTypeReference == null || EdmLibraryExtensions.IsAssignableFrom(metadataTypeReference, complexValueTypeReference),
+                "Complex property types must be the same as or inherit from the ones from metadata (unless open).");
+
+            typeName = this.JsonLightOutputContext.TypeNameOracle.GetValueTypeNameForWriting(resourceValue, metadataTypeReference, complexValueTypeReference, isOpenPropertyType);
+            if (typeName != null)
+            {
+                this.ODataAnnotationWriter.WriteODataTypeInstanceAnnotation(typeName);
+            }
+
+            // Write custom instance annotations
+            this.InstanceAnnotationWriter.WriteInstanceAnnotations(resourceValue.InstanceAnnotations);
+
+            // Write the properties of the complex value as usual. Note we do not allow complex types to contain named stream properties.
+            DuplicatePropertyNameChecker checker = new DuplicatePropertyNameChecker();
+            this.PropertySerializer.WriteProperties(
+                complexValueTypeReference == null ? null : complexValueTypeReference.ComplexDefinition(),
+                resourceValue.Properties,
+                true /* isComplexValue */,
+                checker);
+
+            // End the object scope which represents the complex instance;
+            // for top-level complex properties we already wrote the end object scope.
+            if (!isTopLevel)
+            {
+                this.JsonWriter.EndObjectScope();
+            }
+
+            this.DecreaseRecursionDepth();
+        }
+
+        /// <summary>
+        /// Writes out the value of a nested resource, <see cref="ODataNestedResourceValue"/>.
+        /// The nested resouce value can't be top level.
+        /// </summary>
+        /// <param name="resourceValue">The nested resource value.</param>
+        /// <param name="metadataTypeReference">The metadata type for the nested resource value.</param>
+        /// <param name="isOpenPropertyType">true if the type name belongs to an open property.</param>
+        public virtual void WriteNestedResourceValue(ODataNestedResourceValue resourceValue, IEdmTypeReference metadataTypeReference,
+            bool isOpenPropertyType)
+        {
+            // The nested resouce value can be null.
+            if (resourceValue == null)
+            {
+                this.WriteNullValue();
+                return;
+            }
+
+            this.IncreaseRecursionDepth();
+
+            // {
+            this.JsonWriter.StartObjectScope();
+
+            string typeName = resourceValue.TypeName;
+
+            // In requests, we allow the property type reference to be null if the type name is specified in the OM
+            if (metadataTypeReference == null && !this.WritingResponse && typeName == null && this.Model.IsUserModel())
+            {
+                throw new ODataException(ODataErrorStrings.ODataJsonLightPropertyAndValueSerializer_NoExpectedTypeOrTypeNameSpecifiedForNestedResourceValueRequest);
+            }
+
+            // Resolve the type name to the type; if no type name is specified we will use the 
+            // type inferred from metadata.
+            IEdmStructuredTypeReference structuredTypeReference = (IEdmStructuredTypeReference)TypeNameOracle.ResolveAndValidateTypeForResourceValue(
+                this.Model, metadataTypeReference, resourceValue, false, this.WriterValidator);
+
+            typeName = this.JsonLightOutputContext.TypeNameOracle.GetValueTypeNameForWriting(resourceValue, metadataTypeReference, structuredTypeReference, isOpenPropertyType);
+            if (typeName != null)
+            {
+                this.ODataAnnotationWriter.WriteODataTypeInstanceAnnotation(typeName);
+            }
+
+            // Write custom instance annotations
+            this.InstanceAnnotationWriter.WriteInstanceAnnotations(resourceValue.InstanceAnnotations);
+
+            // Write the structural properties
+            DuplicatePropertyNameChecker checker = new DuplicatePropertyNameChecker();
+            this.PropertySerializer.WriteProperties(
+                structuredTypeReference == null ? null : structuredTypeReference.StructuredDefinition(),
+                resourceValue.Resource.Properties,
+                false,
+                checker);
+
+            // Write the nested properties
+            this.PropertySerializer.WriteProperties(
+                structuredTypeReference == null ? null : structuredTypeReference.StructuredDefinition(),
+                resourceValue.NestedProperties,
+                checker);
+
+            // End the object scope which represents the nested resource value with "}"
+            this.JsonWriter.EndObjectScope();
+
+            this.DecreaseRecursionDepth();
+        }
+
+        /// <summary>
+        /// Writes out the value of a nested resource set, <see cref="ODataNestedResourceSetValue"/>.
+        /// The nested resouce set value can't be top level.
+        /// </summary>
+        /// <param name="resourceSetValue">The nested resource set value to write.</param>
+        /// <param name="metadataTypeReference">The metadata type reference for the collection.</param>
+        /// <param name="isOpenPropertyType">True if the type name belongs to an open property.</param>
+        public virtual void WriteNestedResourceSetValue(ODataNestedResourceSetValue resourceSetValue,
+            IEdmTypeReference metadataTypeReference, bool isOpenPropertyType)
+        {
+            Debug.Assert(resourceSetValue != null, "resourceSetValue != null");
+
+            this.IncreaseRecursionDepth();
+
+            // If the NestedResourceSet has type information write out the metadata and the type in it.
+            string typeName = resourceSetValue.TypeName;
+
+            // In requests, we allow the metadata type reference to be null if the type name is specified in the OM
+            if (metadataTypeReference == null && !this.WritingResponse && typeName == null && this.Model.IsUserModel())
+            {
+                throw new ODataException(ODataErrorStrings.ODataJsonLightPropertyAndValueSerializer_NoExpectedTypeOrTypeNameSpecifiedForCollectionValueInRequest);
+            }
+
+            IEdmTypeReference valueTypeReference = TypeNameOracle.ResolveAndValidateTypeForResourceSetValue(this.Model, metadataTypeReference, resourceSetValue, isOpenPropertyType, this.WriterValidator);
+            Debug.Assert(valueTypeReference != null && valueTypeReference.IsStructuredCollectionType());
+            IEdmTypeReference expectedItemTypeReference = valueTypeReference.AsCollection().ElementType();
+
+            // "[", this represents the array of items in the ResourceSet
+            this.JsonWriter.StartArrayScope();
+
+            // Iterate through the ODataNestedResourceSetValue items and write them out.
+            if (resourceSetValue.ResourceItems != null)
+            {
+                foreach (var item in resourceSetValue.ResourceItems)
+                {
+                    if (item == null)
+                    {
+                        this.WriterValidator.ValidateNullCollectionItem(expectedItemTypeReference);
+                    }
+
+                    this.WriteNestedResourceValue(item, expectedItemTypeReference, isOpenPropertyType);
+                }
+            }
+
+            // "]", End the array scope which holds the items
+            this.JsonWriter.EndArrayScope();
+
+            this.DecreaseRecursionDepth();
+        }
+
+        /// <summary>
         /// Writes out the value of a collection property.
         /// </summary>
         /// <param name="collectionValue">The collection value to write.</param>
@@ -150,30 +367,43 @@ namespace Microsoft.OData.JsonLight
                 {
                     ValidationUtils.ValidateCollectionItem(item, expectedItemTypeReference.IsNullable());
 
-                    Debug.Assert(!(item is ODataCollectionValue), "!(item is ODataCollectionValue)");
-                    Debug.Assert(!(item is ODataStreamReferenceValue), "!(item is ODataStreamReferenceValue)");
-
-                    // by design: collection element's type name is not written for enum or non-spatial primitive value even in case of full metadata.
-                    // because enum and non-spatial primitive types don't have inheritance, the type of each element is the same as the item type of the collection, whose type name for spatial types in full metadata mode.
-                    ODataEnumValue enumValue = item as ODataEnumValue;
-                    if (enumValue != null)
+                    ODataResourceValue itemAsResourceValue = item as ODataResourceValue;
+                    if (itemAsResourceValue != null)
                     {
-                        this.WriteEnumValue(enumValue, expectedItemTypeReference);
+                        this.WriteResourceValue(
+                            itemAsResourceValue,
+                            expectedItemTypeReference,
+                            false /*isTopLevel*/,
+                            false /*isOpenPropertyType*/,
+                            new PropertyAndAnnotationCollector(this.MessageWriterSettings.ThrowOnDuplicatePropertyNames));
                     }
                     else
                     {
-                        ODataUntypedValue untypedValue = item as ODataUntypedValue;
-                        if (untypedValue != null)
+                        Debug.Assert(!(item is ODataCollectionValue), "!(item is ODataCollectionValue)");
+                        Debug.Assert(!(item is ODataStreamReferenceValue), "!(item is ODataStreamReferenceValue)");
+
+                        // by design: collection element's type name is not written for enum or non-spatial primitive value even in case of full metadata.
+                        // because enum and non-spatial primitive types don't have inheritance, the type of each element is the same as the item type of the collection, whose type name for spatial types in full metadata mode.
+                        ODataEnumValue enumValue = item as ODataEnumValue;
+                        if (enumValue != null)
                         {
-                            this.WriteUntypedValue(untypedValue);
-                        }
-                        else if (item != null)
-                        {
-                            this.WritePrimitiveValue(item, expectedItemTypeReference);
+                            this.WriteEnumValue(enumValue, expectedItemTypeReference);
                         }
                         else
                         {
-                            this.WriteNullValue();
+                            ODataUntypedValue untypedValue = item as ODataUntypedValue;
+                            if (untypedValue != null)
+                            {
+                                this.WriteUntypedValue(untypedValue);
+                            }
+                            else if (item != null)
+                            {
+                                this.WritePrimitiveValue(item, expectedItemTypeReference);
+                            }
+                            else
+                            {
+                                this.WriteNullValue();
+                            }
                         }
                     }
                 }
@@ -247,8 +477,7 @@ namespace Microsoft.OData.JsonLight
         /// Writes an untyped value.
         /// </summary>
         /// <param name="value">The untyped value to write.</param>
-        public virtual void WriteUntypedValue(
-            ODataUntypedValue value)
+        public virtual void WriteUntypedValue(ODataUntypedValue value)
         {
             Debug.Assert(value != null, "value != null");
 

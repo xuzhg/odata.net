@@ -1420,6 +1420,7 @@ namespace Microsoft.Test.OData.TDD.Tests.Reader.JsonLight
         [InlineData("Collection(Edm.Untyped)")]
         public void ReadUntypedCollectionContainingCollection(string fragment)
         {
+
             string payload = "{\"@odata.context\":\"http://www.sampletest.com/$metadata#" + fragment +"\",\"value\":[[\"primitiveString\",{\"id\":1}]]}";
             ODataPrimitiveValue primitiveMember = null;
             ODataResource resourceMember = null;

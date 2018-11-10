@@ -47,7 +47,12 @@ namespace Microsoft.OData
             }
 
             set
-            {
+            {/*
+                if (value is ODataNestedValue)
+                {
+                    throw new ODataException(Strings.NestedValueNotAllowedAsPropertyValue);
+                }
+                */
                 this.odataValue = value.ToODataValue();
             }
         }

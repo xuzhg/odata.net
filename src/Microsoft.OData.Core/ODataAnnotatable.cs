@@ -30,7 +30,7 @@ namespace Microsoft.OData
         /// <summary>
         /// The annotation for storing @odata.type.
         /// </summary>
-        public ODataTypeAnnotation TypeAnnotation { get; set; }
+        public virtual ODataTypeAnnotation TypeAnnotation { get; set; }
 
         /// <summary>
         /// Gets the custom instance annotations.

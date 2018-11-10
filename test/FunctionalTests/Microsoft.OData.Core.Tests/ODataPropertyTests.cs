@@ -92,5 +92,14 @@ namespace Microsoft.OData.Tests
             this.property.Value = valueUInt64;
             this.property.ODataValue.Should().BeSameAs(valueUInt64);
         }
+
+        [Fact]
+        public void SetPropertyValueAsODataNestedValueThrows()
+        {
+            ODataNestedResourceSetValue setValue = new ODataNestedResourceSetValue();
+            ODataProperty property = new ODataProperty();
+            Action action = () => property.Value = setValue;
+            action.ShouldThrow<ODataException>(Strings.NestedValueNotAllowedAsPropertyValue);
+        }
     }
 }

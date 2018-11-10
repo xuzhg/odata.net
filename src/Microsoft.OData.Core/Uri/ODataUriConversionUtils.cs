@@ -70,10 +70,11 @@ namespace Microsoft.OData
         /// <param name="model">Model to use for verification.</param>
         /// <param name="typeReference">Expected type reference from deserialization. If null, verification will be skipped.</param>
         /// <returns>An ODataCollectionValue that results from the deserialization of <paramref name="value"/>.</returns>
-        internal static object ConvertFromCollectionValue(string value, IEdmModel model, IEdmTypeReference typeReference)
+        internal static object ConvertFromResourceOrCollectionValue(string value, IEdmModel model, IEdmTypeReference typeReference)
         {
             ODataMessageReaderSettings settings = new ODataMessageReaderSettings();
             settings.Validations &= ~ValidationKinds.ThrowOnUndeclaredPropertyForNonOpenType;
+            settings.ShouldIncludeAnnotation = ODataUtils.CreateAnnotationFilter("*");
 
             using (StringReader reader = new StringReader(value))
             {
@@ -107,6 +108,55 @@ namespace Microsoft.OData
 
                     Debug.Assert(rawResult is ODataCollectionValue, "rawResult is ODataCollectionValue");
                     return rawResult;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Converts the given string <paramref name="value"/> to an <see cref="ODataNestedValue"/> and returns it.
+        /// </summary>
+        /// <param name="value">Value to be deserialized.</param>
+        /// <param name="model">Model to use for verification.</param>
+        /// <param name="version">The OData version.</param>
+        /// <param name="typeReference">Expected type reference from deserialization.</param>
+        /// <returns>An <see cref="ODataNestedValue"/> that results from the deserialization of <paramref name="value"/>.</returns>
+        internal static ODataNestedValue ConvertFromNestedValueLiteral(string value, IEdmModel model, ODataVersion version,
+            IEdmTypeReference typeReference)
+        {
+            ExceptionUtils.CheckArgumentNotNull(model, "model");
+            ExceptionUtils.CheckArgumentNotNull(typeReference, "typeReference");
+
+            ODataMessageReaderSettings settings = new ODataMessageReaderSettings();
+            settings.Validations &= ~ValidationKinds.ThrowOnUndeclaredPropertyForNonOpenType;
+            settings.Version = version;
+            settings.ReadUntypedAsString = true; // enforce the untype value reading as string into the properties
+            settings.ShouldIncludeAnnotation = ODataUtils.CreateAnnotationFilter("*");
+
+            using (StringReader stringReader = new StringReader(value))
+            {
+                ODataMessageInfo messageInfo = new ODataMessageInfo
+                {
+                    MediaType = new ODataMediaType(MimeConstants.MimeApplicationType, MimeConstants.MimeJsonSubType),
+                    Model = model,
+                    IsResponse = false,
+                    IsAsync = false,
+                    MessageStream = null,
+                };
+
+                using (ODataJsonLightInputContext context = new ODataJsonLightInputContext(stringReader, messageInfo, settings))
+                {
+                    ODataReader reader;
+                    if (typeReference.IsCollection())
+                    {
+                        IEdmCollectionTypeReference collectionType = typeReference.AsCollection();
+                        reader = context.CreateUriParameterResourceSetReader(null, collectionType.ElementType().AsStructured().StructuredDefinition());
+                    }
+                    else
+                    {
+                        reader = context.CreateUriParameterResourceReader(null, typeReference.ToStructuredType());
+                    }
+
+                    return reader.ReadNestedValue();
                 }
             }
         }
@@ -484,6 +534,72 @@ namespace Microsoft.OData
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Converts a <see cref="ODataNestedResourceValue"/> to a string.
+        /// </summary>
+        /// <param name="nestedResource">Instance to convert.</param>
+        /// <param name="model">Model to be used for validation. User model is optional. The EdmLib core model is expected as a minimum.</param>
+        /// <param name="version">Version to be compliant with.</param>
+        /// <returns>A string representation of <paramref name="nestedResource"/> to be added.</returns>
+        internal static string ConvertToResourceLiteral(ODataNestedResourceValue nestedResource, IEdmModel model, ODataVersion version)
+        {
+            ExceptionUtils.CheckArgumentNotNull(nestedResource, "nestedResource");
+            ExceptionUtils.CheckArgumentNotNull(model, "model");
+
+            StringBuilder builder = new StringBuilder();
+            using (TextWriter textWriter = new StringWriter(builder, CultureInfo.InvariantCulture))
+            {
+                ODataMessageWriterSettings messageWriterSettings = new ODataMessageWriterSettings()
+                {
+                    Version = version,
+
+                    // TBD: Should write instance annotations for the literal???
+                    // ShouldIncludeAnnotation = ODataUtils.CreateAnnotationFilter("*")
+                };
+
+                WriteJsonLightLiteral(
+                    model,
+                    messageWriterSettings,
+                    textWriter,
+                    (serializer) => serializer.WriteNestedResourceValue(nestedResource, null, true /*isOpenPropetyType*/));
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Converts a <see cref="ODataNestedResourceSetValue"/> to a string for use in a Url.
+        /// </summary>
+        /// <param name="complexValue">Instance to convert.</param>
+        /// <param name="model">Model to be used for validation. User model is optional. The EdmLib core model is expected as a minimum.</param>
+        /// <param name="version">Version to be compliant with.</param>
+        /// <returns>A string representation of <paramref name="nestedResourceSet"/> to be added to a Url.</returns>
+        internal static string ConvertToResourceSetLiteral(ODataNestedResourceSetValue nestedResourceSet, IEdmModel model, ODataVersion version)
+        {
+            ExceptionUtils.CheckArgumentNotNull(nestedResourceSet, "nestedResourceSet");
+            ExceptionUtils.CheckArgumentNotNull(model, "model");
+
+            StringBuilder builder = new StringBuilder();
+            using (TextWriter textWriter = new StringWriter(builder, CultureInfo.InvariantCulture))
+            {
+                ODataMessageWriterSettings messageWriterSettings = new ODataMessageWriterSettings()
+                {
+                    Version = version,
+
+                    // TBD: Should write instance annotations for the literal???
+                    // ShouldIncludeAnnotation = ODataUtils.CreateAnnotationFilter("*")
+                };
+
+                WriteJsonLightLiteral(
+                    model,
+                    messageWriterSettings,
+                    textWriter,
+                    (serializer) => serializer.WriteNestedResourceSetValue(nestedResourceSet, null, false /*isOpenPropetyType*/));
+            }
+
+            return builder.ToString();
         }
 
         /// <summary>

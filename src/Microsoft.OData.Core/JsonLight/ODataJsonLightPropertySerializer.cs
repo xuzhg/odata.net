@@ -123,6 +123,22 @@ namespace Microsoft.OData.JsonLight
             }
         }
 
+        internal void WriteProperties(
+            IEdmStructuredType owningType,
+            IEnumerable<ODataNestedProperty> properties,
+            IDuplicatePropertyNameChecker duplicatePropertyNameChecker)
+        {
+            if (properties == null)
+            {
+                return;
+            }
+
+            foreach (ODataNestedProperty property in properties)
+            {
+                this.WriteProperty(property, owningType, duplicatePropertyNameChecker);
+            }
+        }
+
         /// <summary>
         /// Test to see if <paramref name="property"/> is an open property or not.
         /// </summary>
@@ -161,7 +177,6 @@ namespace Microsoft.OData.JsonLight
         /// </summary>
         /// <param name="property">The property to write out.</param>
         /// <param name="owningType">The owning type for the <paramref name="property"/> or null if no metadata is available.</param>
-        /// <param name="isTopLevel">true when writing a top-level property; false for nested properties.</param>
         /// <param name="allowStreamProperty">Should pass in true if we are writing a property of an ODataResource instance, false otherwise.
         /// Named stream properties should only be defined on ODataResource instances.</param>
         /// <param name="duplicatePropertyNameChecker">The DuplicatePropertyNameChecker to use.</param>
@@ -254,6 +269,93 @@ namespace Microsoft.OData.JsonLight
             {
                 this.WriteCollectionProperty(collectionValue, isOpenPropertyType);
                 return;
+            }
+        }
+
+        /// <summary>
+        /// Writes a name/value pair for a nested property.
+        /// </summary>
+        /// <param name="property">The property to write out.</param>
+        /// <param name="owningType">The owning type for the <paramref name="property"/> or null if no metadata is available.</param>
+        /// <param name="isTopLevel">true when writing a top-level property; false for nested properties.</param>
+        /// <param name="allowStreamProperty">Should pass in true if we are writing a property of an ODataResource instance, false otherwise.
+        /// Named stream properties should only be defined on ODataResource instances.</param>
+        /// <param name="duplicatePropertyNameChecker">The DuplicatePropertyNameChecker to use.</param>
+        [SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling", Justification = "Splitting the code would make the logic harder to understand; class coupling is only slightly above threshold.")]
+        private void WriteProperty(
+            ODataNestedProperty property,
+            IEdmStructuredType owningType,
+            IDuplicatePropertyNameChecker duplicatePropertyNameChecker)
+        {
+            if (property == null)
+            {
+                throw new ODataException(Strings.WriterValidationUtils_PropertyMustNotBeNull);
+            }
+
+            string propertyName = property.NestedResourceInfo.Name;
+
+            if (this.JsonLightOutputContext.MessageWriterSettings.Validations != ValidationKinds.None)
+            {
+                WriterValidationUtils.ValidatePropertyName(propertyName);
+            }
+
+            if (!this.JsonLightOutputContext.PropertyCacheHandler.InResourceSetScope())
+            {
+                this.currentPropertyInfo = new PropertySerializationInfo(propertyName, owningType) { IsTopLevel = false };
+            }
+            else
+            {
+                this.currentPropertyInfo = this.JsonLightOutputContext.PropertyCacheHandler.GetProperty(propertyName, owningType);
+            }
+
+            WriterValidationUtils.ValidatePropertyDefined(this.currentPropertyInfo, this.MessageWriterSettings.ThrowOnUndeclaredPropertyForNonOpenType);
+
+            duplicatePropertyNameChecker.ValidatePropertyUniqueness(property.NestedResourceInfo);
+
+            // nested property should never be undeclared property?
+            if (currentPropertyInfo.MetadataType.IsUndeclaredProperty)
+            {
+                if (property.TypeAnnotation != null && property.TypeAnnotation.TypeName != null)
+                {
+                    this.ODataAnnotationWriter.WriteODataTypePropertyAnnotation(propertyName, property.TypeAnnotation.TypeName);
+                }
+            }
+
+            this.InstanceAnnotationWriter.WriteInstanceAnnotations(property.InstanceAnnotations, propertyName, currentPropertyInfo.MetadataType.IsUndeclaredProperty);
+
+            ODataNestedValue value = property.Value;
+            if (value == null)
+            {
+                this.JsonWriter.WriteName(propertyName);
+                if (property.NestedResourceInfo.IsCollection != null && property.NestedResourceInfo.IsCollection.Value)
+                {
+                    this.JsonWriter.StartArrayScope(); // [
+                    this.JsonWriter.EndArrayScope(); // ]
+                }
+                else
+                {
+                    this.JsonLightValueSerializer.WriteNullValue();
+                }
+
+                return;
+            }
+
+            ODataNestedResourceSetValue resourceSetValue = value as ODataNestedResourceSetValue;
+            if (resourceSetValue != null)
+            {
+                this.WritePropertyTypeName();
+                this.JsonWriter.WriteName(this.currentPropertyInfo.WireName);
+                this.jsonLightValueSerializer.WriteNestedResourceSetValue(resourceSetValue, null, false);
+            }
+            else
+            {
+                ODataNestedResourceValue resourceValue = value as ODataNestedResourceValue;
+                if (resourceValue != null)
+                {
+                    this.WritePropertyTypeName();
+                    this.JsonWriter.WriteName(this.currentPropertyInfo.WireName);
+                    this.jsonLightValueSerializer.WriteNestedResourceValue(resourceValue, null, false);
+                }
             }
         }
 

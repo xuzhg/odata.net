@@ -4324,6 +4324,17 @@ public abstract class Microsoft.OData.ODataItem : Microsoft.OData.ODataAnnotatab
 	protected ODataItem ()
 }
 
+public abstract class Microsoft.OData.ODataNestedResourceValueBase : Microsoft.OData.ODataNestedValue {
+	protected ODataNestedResourceValueBase ()
+}
+
+public abstract class Microsoft.OData.ODataNestedValue : Microsoft.OData.ODataValue {
+	protected ODataNestedValue ()
+
+	System.Collections.Generic.ICollection`1[[Microsoft.OData.ODataInstanceAnnotation]] InstanceAnnotations  { public get; public set; }
+	Microsoft.OData.ODataItem Item  { public abstract get; }
+}
+
 public abstract class Microsoft.OData.ODataOperation : Microsoft.OData.ODataAnnotatable {
 	protected ODataOperation ()
 
@@ -4577,6 +4588,16 @@ public sealed class Microsoft.OData.ODataMessageExtensions {
 	ExtensionAttribute(),
 	]
 	public static Microsoft.OData.ODataPreferenceHeader PreferHeader (Microsoft.OData.IODataRequestMessage requestMessage)
+}
+
+[
+ExtensionAttribute(),
+]
+public sealed class Microsoft.OData.ODataNestedValueUtils {
+	[
+	ExtensionAttribute(),
+	]
+	public static Microsoft.OData.ODataNestedValue ReadNestedValue (Microsoft.OData.ODataReader reader)
 }
 
 [
@@ -4900,6 +4921,13 @@ public sealed class Microsoft.OData.ODataEntityReferenceLinks : Microsoft.OData.
 	System.Uri NextPageLink  { public get; public set; }
 }
 
+public sealed class Microsoft.OData.ODataEntityReferenceLinkValue : Microsoft.OData.ODataNestedResourceValueBase {
+	public ODataEntityReferenceLinkValue (Microsoft.OData.ODataEntityReferenceLink entityReferenceLink)
+
+	Microsoft.OData.ODataEntityReferenceLink EntityReferenceLink  { public get; }
+	Microsoft.OData.ODataItem Item  { public virtual get; }
+}
+
 public sealed class Microsoft.OData.ODataEntitySetInfo : Microsoft.OData.ODataServiceDocumentElement {
 	public ODataEntitySetInfo ()
 }
@@ -5218,6 +5246,30 @@ public sealed class Microsoft.OData.ODataNestedResourceInfoSerializationInfo {
 
 	bool IsComplex  { public get; public set; }
 	bool IsUndeclared  { public get; public set; }
+}
+
+public sealed class Microsoft.OData.ODataNestedResourceInfoValue : Microsoft.OData.ODataNestedValue {
+	public ODataNestedResourceInfoValue (Microsoft.OData.ODataNestedResourceInfo nestedResourceInfo)
+
+	Microsoft.OData.ODataItem Item  { public virtual get; }
+	Microsoft.OData.ODataNestedResourceInfo NestedResourceInfo  { public get; }
+	Microsoft.OData.ODataNestedValue NestedValue  { public get; public set; }
+}
+
+public sealed class Microsoft.OData.ODataNestedResourceSetValue : Microsoft.OData.ODataNestedValue {
+	public ODataNestedResourceSetValue (Microsoft.OData.ODataResourceSetBase resourceSet)
+
+	Microsoft.OData.ODataItem Item  { public virtual get; }
+	System.Collections.Generic.IList`1[[Microsoft.OData.ODataNestedResourceValueBase]] ResourceItems  { public get; public set; }
+	Microsoft.OData.ODataResourceSetBase ResourceSet  { public get; }
+}
+
+public sealed class Microsoft.OData.ODataNestedResourceValue : Microsoft.OData.ODataNestedResourceValueBase {
+	public ODataNestedResourceValue (Microsoft.OData.ODataResourceBase resource)
+
+	Microsoft.OData.ODataItem Item  { public virtual get; }
+	System.Collections.Generic.IList`1[[Microsoft.OData.ODataNestedResourceInfoValue]] NestedItems  { public get; public set; }
+	Microsoft.OData.ODataResourceBase Resource  { public get; }
 }
 
 public sealed class Microsoft.OData.ODataNullValue : Microsoft.OData.ODataValue {
